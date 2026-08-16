@@ -11,12 +11,15 @@ import {
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { SubscriptionsService } from './subscriptions.service';
 import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
 import { CreateLibrarySubscriptionDto } from './dto/create-library-subscription.dto';
+import { UpdateSubscriptionPlanDto } from './dto/update-subscription-plan.dto';
+import { ChangeLibraryPlanDto } from './dto/change-library-plan.dto';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
@@ -67,7 +70,27 @@ export class SubscriptionsController {
     };
   }
 
+  @Patch('plans/:id')
+  @RequirePermission('SAAS_PLAN_MANAGE')
+  @ApiOperation({
+    summary: 'Update a subscription plan (or activate/deactivate via status)',
+  })
+  @ApiParam({ name: 'id', description: 'Numeric plan id', example: 1 })
+  async updatePlan(
+    @Param('id') id: string,
+    @Body() dto: UpdateSubscriptionPlanDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return {
+      message: 'Subscription plan updated successfully',
+      data: await this.subscriptionsService.updatePlan(id, dto, user),
+    };
+  }
+
   // --- Library Subscriptions ---
+  // IMPORTANT: static paths (`libraries/my`) MUST be declared before the
+  // `libraries/:id` parameterized routes below.
+
   @Post('libraries')
   @RequirePermission('SAAS_SUBSCRIPTION_MANAGE')
   @ApiOperation({
@@ -110,6 +133,56 @@ export class SubscriptionsController {
     return {
       message: 'Subscription cancelled successfully',
       data: await this.subscriptionsService.cancelSubscription(user),
+    };
+  }
+
+  @Get('libraries')
+  @RequirePermission('SAAS_SUBSCRIPTION_MANAGE')
+  @ApiOperation({
+    summary:
+      'Admin: list every library subscription with plan + expiry info',
+  })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'expiring_soon', required: false, type: Boolean })
+  @ApiQuery({ name: 'include_inactive', required: false, type: Boolean })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  async findAllLibrarySubscriptions(
+    @Query('status') status?: string,
+    @Query('expiring_soon') expiringSoon?: string,
+    @Query('include_inactive') includeInactive?: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    const { data, total } =
+      await this.subscriptionsService.findAllLibrarySubscriptions({
+        status,
+        expiringSoon: expiringSoon === 'true',
+        includeInactive: includeInactive === 'true',
+        page,
+        limit,
+      });
+    return {
+      message: 'Library subscriptions retrieved successfully',
+      data,
+      meta: { total },
+    };
+  }
+
+  @Patch('libraries/:id')
+  @RequirePermission('SAAS_SUBSCRIPTION_MANAGE')
+  @ApiOperation({
+    summary: 'Admin: change the plan of an existing library subscription',
+  })
+  @ApiParam({ name: 'id', description: 'Numeric subscription id', example: 1 })
+  async changeLibraryPlan(
+    @Param('id') id: string,
+    @Body() dto: ChangeLibraryPlanDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return {
+      message: 'Library subscription plan updated successfully',
+      data: await this.subscriptionsService.changeLibraryPlan(id, dto, user),
     };
   }
 }

@@ -1,17 +1,8 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Param,
-  Patch,
-  Post,
-} from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CreateLibraryDto } from './dto/create-library.dto';
 import { UpdateLibraryDto } from './dto/update-library.dto';
+import { UpdateLibraryStatusDto } from './dto/update-library-status.dto';
 import { LibrariesService } from './libraries.service';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -30,10 +21,17 @@ export class LibrariesController {
   @Get()
   @RequirePermission('LIBRARY_VIEW')
   @ApiOperation({ summary: 'Get all libraries (Super Admin only)' })
-  async findAll(@CurrentUser() user: AuthenticatedUser) {
+  @ApiQuery({ name: 'include_inactive', required: false, type: Boolean })
+  async findAll(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('include_inactive') includeInactive?: string,
+  ) {
     // meta.total lets the frontend render pagination later without changing
     // the response shape.
-    const { data, total } = await this.librariesService.findAll(user);
+    const { data, total } = await this.librariesService.findAll(
+      user,
+      includeInactive === 'true',
+    );
     return {
       message: 'Libraries retrieved successfully',
       data,
@@ -52,6 +50,40 @@ export class LibrariesController {
     return {
       message: 'Library retrieved successfully',
       data: await this.librariesService.findOne(id, user),
+    };
+  }
+
+  @Get(':id/admin-detail')
+  @RequirePermission('LIBRARY_VIEW')
+  @ApiOperation({
+    summary:
+      'Admin: get a library with its owner user and current subscription (any status)',
+  })
+  @ApiParam({ name: 'id', description: 'Numeric library id', example: 1 })
+  async getAdminDetail(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return {
+      message: 'Library details retrieved successfully',
+      data: await this.librariesService.getAdminDetail(id, user),
+    };
+  }
+
+  @Patch(':id/status')
+  @RequirePermission('LIBRARY_STATUS_UPDATE')
+  @ApiOperation({
+    summary: 'Activate / deactivate a library (Super Admin only)',
+  })
+  @ApiParam({ name: 'id', description: 'Numeric library id', example: 1 })
+  async updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateLibraryStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return {
+      message: 'Library status updated successfully',
+      data: await this.librariesService.updateStatus(id, dto, user),
     };
   }
 

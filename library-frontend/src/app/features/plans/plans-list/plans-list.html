@@ -1,0 +1,164 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Area -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm">
+          <span class="text-sm font-bold opacity-80">Subscription Plans</span>
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+      <!-- Hero Header Banner -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">sell</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">SaaS Subscription Plans</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Create, edit, activate or deactivate the plans libraries subscribe to.</p>
+              </div>
+          </div>
+          <div class="flex flex-wrap gap-2 z-10">
+              <button (click)="openCreate()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all border-t border-white/20">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  Create Plan
+              </button>
+          </div>
+      </div>
+
+      <!-- Plans Table -->
+      <div class="app-card rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+              <table class="app-table whitespace-nowrap">
+                  <thead>
+                      <tr>
+                          <th>Plan</th>
+                          <th>Code</th>
+                          <th class="text-right">Price</th>
+                          <th>Billing Cycle</th>
+                          <th>Status</th>
+                          <th class="text-right">Actions</th>
+                      </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200/10">
+                      @for (plan of plans(); track plan.id) {
+                          <tr class="hover:bg-amber-500/[0.02] transition-colors">
+                              <td class="py-3 px-4">
+                                  <div class="font-bold text-xs">{{ plan.name }}</div>
+                                  @if (plan.description) {
+                                      <div class="text-[10px] opacity-60 mt-0.5 max-w-[260px] truncate">{{ plan.description }}</div>
+                                  }
+                              </td>
+                              <td class="py-3 px-4 text-xs opacity-70">{{ plan.code }}</td>
+                              <td class="py-3 px-4 text-right font-bold text-xs">{{ plan.price | currency: plan.currency:'symbol':'1.0-0' }}</td>
+                              <td class="py-3 px-4 text-xs opacity-70">{{ plan.billing_cycle }}</td>
+                              <td class="py-3 px-4">
+                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] shrink-0"
+                                        [class.app-badge-active]="plan.status === 'ACTIVE'"
+                                        [class.app-badge-inactive]="plan.status !== 'ACTIVE'">
+                                      {{ plan.status }}
+                                  </span>
+                              </td>
+                              <td class="py-3 px-4 text-right">
+                                  <div class="inline-flex items-center gap-1.5">
+                                      <button (click)="openEdit(plan)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-amber-500 transition-colors" title="Edit plan">
+                                          <span class="material-symbols-outlined text-base">edit</span>
+                                      </button>
+                                      @if (plan.status === 'ACTIVE') {
+                                          <button (click)="toggleStatus(plan)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-rose-500 transition-colors" title="Deactivate">
+                                              <span class="material-symbols-outlined text-base">toggle_off</span>
+                                          </button>
+                                      } @else {
+                                          <button (click)="toggleStatus(plan)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-emerald-500 transition-colors" title="Activate">
+                                              <span class="material-symbols-outlined text-base">toggle_on</span>
+                                          </button>
+                                      }
+                                  </div>
+                              </td>
+                          </tr>
+                      } @empty {
+                          <tr>
+                              <td colspan="6" class="py-8 text-center opacity-60 text-sm">No subscription plans found.</td>
+                          </tr>
+                      }
+                  </tbody>
+              </table>
+          </div>
+      </div>
+
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[30vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+  </main>
+</div>
+
+<!-- Create / Edit Plan Modal -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4" (click)="closeModal()">
+      <div class="app-card rounded-xl w-full max-w-md p-5 shadow-2xl border" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-sm app-header-title">{{ editingPlan() ? 'Edit Subscription Plan' : 'Create Subscription Plan' }}</h3>
+              <button (click)="closeModal()" class="p-1 rounded-lg app-input opacity-60 hover:opacity-100 transition-colors">
+                  <span class="material-symbols-outlined text-base">close</span>
+              </button>
+          </div>
+
+          <form [formGroup]="planForm" (ngSubmit)="submit()" class="space-y-3">
+              <div>
+                  <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Plan Name</label>
+                  <input formControlName="name" type="text" class="app-input w-full mt-1 px-3 py-2 rounded-lg text-xs border" placeholder="e.g. Professional" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                  <div>
+                      <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Code</label>
+                      <input formControlName="code" type="text" class="app-input w-full mt-1 px-3 py-2 rounded-lg text-xs border" placeholder="e.g. PRO" />
+                  </div>
+                  <div>
+                      <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Price</label>
+                      <input formControlName="price" type="number" min="0" class="app-input w-full mt-1 px-3 py-2 rounded-lg text-xs border" placeholder="0" />
+                  </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                  <div>
+                      <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Currency</label>
+                      <input formControlName="currency" type="text" class="app-input w-full mt-1 px-3 py-2 rounded-lg text-xs border" />
+                  </div>
+                  <div>
+                      <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Billing Cycle</label>
+                      <select formControlName="billing_cycle" class="app-input w-full mt-1 px-3 py-2 rounded-lg text-xs border">
+                          <option value="MONTHLY">Monthly</option>
+                          <option value="QUARTERLY">Quarterly</option>
+                          <option value="YEARLY">Yearly</option>
+                      </select>
+                  </div>
+              </div>
+              <div>
+                  <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Description</label>
+                  <textarea formControlName="description" rows="2" class="app-input w-full mt-1 px-3 py-2 rounded-lg text-xs border" placeholder="What does this plan include?"></textarea>
+              </div>
+
+              <div class="flex justify-end gap-2 pt-2">
+                  <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg app-input text-xs font-bold opacity-80 hover:opacity-100 transition-all">Cancel</button>
+                  <button type="submit" [disabled]="planForm.invalid" class="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50">
+                      {{ editingPlan() ? 'Save Changes' : 'Create Plan' }}
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+}

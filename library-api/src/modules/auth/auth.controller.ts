@@ -15,6 +15,7 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterLibraryDto } from './dto/register-library.dto';
 
 /**
  * Thin controller — maps HTTP verb + route to a service call (AGENTS.md
@@ -38,6 +39,23 @@ export class AuthController {
     return {
       message: 'User registered successfully',
       data: await this.authService.register(dto),
+    };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Post('register-library')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Register a new library + owner admin',
+    description:
+      'Public self-service signup. Creates the library, its owner admin ' +
+      '(ADMIN + USER roles) and a 14-day TRIALING subscription.',
+  })
+  async registerLibrary(@Body() dto: RegisterLibraryDto) {
+    return {
+      message: 'Library registered successfully',
+      data: await this.authService.registerLibrary(dto),
     };
   }
 

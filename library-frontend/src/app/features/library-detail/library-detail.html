@@ -1,0 +1,200 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Area -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm">
+          <span class="text-sm font-bold opacity-80">Library Details</span>
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+      @if (detail(); as detail) {
+
+          <!-- Hero Header -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+              <div class="flex items-center gap-3.5 z-10">
+                  <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                      <span class="material-symbols-outlined text-2xl">local_library</span>
+                  </div>
+                  <div>
+                      <h2 class="text-xl font-bold tracking-tight app-header-title">{{ detail.library.name }}</h2>
+                      <p class="text-xs mt-0.5 app-header-subtitle">{{ detail.library.code }} · {{ detail.library.city || '—' }}</p>
+                  </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2 z-10">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] shrink-0"
+                        [class.app-badge-active]="detail.library.status === 'ACTIVE'"
+                        [class.app-badge-inactive]="detail.library.status !== 'ACTIVE'">
+                      {{ detail.library.status }}
+                  </span>
+                  <a routerLink="/super-admin/libraries" class="px-3 py-2 rounded-lg app-input text-xs font-bold opacity-80 hover:opacity-100 transition-all flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-sm">arrow_back</span>
+                      All Libraries
+                  </a>
+                  <button (click)="toggleStatus(detail)"
+                          class="px-3 py-2 rounded-lg font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+                          [class.bg-gradient-to-r]="true"
+                          [class.from-rose-500]="detail.library.status === 'ACTIVE'"
+                          [class.to-rose-600]="detail.library.status === 'ACTIVE'"
+                          [class.from-emerald-500]="detail.library.status !== 'ACTIVE'"
+                          [class.to-emerald-600]="detail.library.status !== 'ACTIVE'"
+                          [class.text-white]="detail.library.status === 'ACTIVE'"
+                          [class.text-slate-950]="detail.library.status !== 'ACTIVE'">
+                      <span class="material-symbols-outlined text-sm">{{ detail.library.status === 'ACTIVE' ? 'toggle_off' : 'toggle_on' }}</span>
+                      {{ detail.library.status === 'ACTIVE' ? 'Deactivate' : 'Activate' }}
+                  </button>
+              </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Library Information -->
+              <div class="app-card rounded-xl shadow-xs overflow-hidden">
+                  <div class="px-4 py-3 border-b flex justify-between items-center">
+                      <h3 class="text-xs font-bold uppercase tracking-wider opacity-70">Library Information</h3>
+                  </div>
+                  <div class="p-4 space-y-2.5">
+                      @for (row of [
+                          { label: 'Email', value: detail.library.email || '—' },
+                          { label: 'Phone', value: detail.library.phone || '—' },
+                          { label: 'Address', value: detail.library.address || '—' },
+                          { label: 'City', value: detail.library.city || '—' },
+                          { label: 'Registered', value: (detail.library.created_at | date:'dd MMM yyyy') || '—' }
+                      ]; track row.label) {
+                          <div class="flex justify-between gap-4">
+                              <span class="text-[10px] font-bold uppercase tracking-wider opacity-50">{{ row.label }}</span>
+                              <span class="text-xs text-right">{{ row.value }}</span>
+                          </div>
+                      }
+                  </div>
+              </div>
+
+              <!-- Library Owner -->
+              <div class="app-card rounded-xl shadow-xs overflow-hidden">
+                  <div class="px-4 py-3 border-b">
+                      <h3 class="text-xs font-bold uppercase tracking-wider opacity-70">Library Owner</h3>
+                  </div>
+                  <div class="p-4">
+                      @if (detail.owner; as owner) {
+                          <div class="space-y-2.5">
+                              <div class="flex items-center gap-3">
+                                  <div class="w-10 h-10 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center font-bold shrink-0">
+                                      <span class="material-symbols-outlined text-lg">account_circle</span>
+                                  </div>
+                                  <div>
+                                      <p class="text-sm font-bold">{{ owner.first_name }} {{ owner.last_name || '' }}</p>
+                                      <div class="flex items-center gap-1.5 mt-0.5">
+                                          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] shrink-0"
+                                                [class.app-badge-active]="owner.status === 'ACTIVE'"
+                                                [class.app-badge-inactive]="owner.status !== 'ACTIVE'">
+                                              {{ owner.status }}
+                                          </span>
+                                          @for (role of owner.roles; track role) {
+                                              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] app-badge-maintenance shrink-0">{{ role }}</span>
+                                          }
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="flex justify-between gap-4">
+                                  <span class="text-[10px] font-bold uppercase tracking-wider opacity-50">Email</span>
+                                  <span class="text-xs text-right">{{ owner.email }}</span>
+                              </div>
+                              <div class="flex justify-between gap-4">
+                                  <span class="text-[10px] font-bold uppercase tracking-wider opacity-50">Phone</span>
+                                  <span class="text-xs text-right">{{ owner.phone || '—' }}</span>
+                              </div>
+                          </div>
+                      } @else {
+                          <p class="text-xs opacity-50 text-center py-6">No owner account linked to this library.</p>
+                      }
+                  </div>
+              </div>
+          </div>
+
+          <!-- Subscription & Plan Management -->
+          <div class="app-card rounded-xl shadow-xs overflow-hidden">
+              <div class="px-4 py-3 border-b flex justify-between items-center">
+                  <h3 class="text-xs font-bold uppercase tracking-wider opacity-70">Subscription & Plan</h3>
+              </div>
+              <div class="p-4">
+                  @if (detail.subscription; as sub) {
+                      <div class="flex flex-col md:flex-row justify-between gap-4">
+                          <div class="space-y-2.5">
+                              <div class="flex items-center gap-3">
+                                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] shrink-0"
+                                        [class.app-badge-active]="sub.status === 'ACTIVE'"
+                                        [class.app-badge-maintenance]="sub.status === 'TRIALING'"
+                                        [class.app-badge-inactive]="sub.status === 'CANCELLED'">
+                                      {{ sub.status }}
+                                  </span>
+                                  <span class="text-sm font-bold">{{ sub.plan.name }}</span>
+                                  <span class="text-xs opacity-60">{{ sub.price | currency: sub.currency:'symbol':'1.0-0' }} / {{ sub.plan.billing_cycle }}</span>
+                              </div>
+                              <div class="flex justify-between gap-8">
+                                  <span class="text-[10px] font-bold uppercase tracking-wider opacity-50">Ends On</span>
+                                  <span class="text-xs">{{ (sub.status === 'TRIALING' ? sub.trial_end_at : sub.end_at) | date:'dd MMM yyyy' }}</span>
+                              </div>
+                              <div class="flex justify-between gap-8">
+                                  <span class="text-[10px] font-bold uppercase tracking-wider opacity-50">Days Remaining</span>
+                                  @if (sub.status === 'EXPIRED') {
+                                      <span class="text-xs font-extrabold text-rose-500">Expired</span>
+                                  } @else {
+                                      <span class="text-xs font-extrabold" [class.text-amber-500]="sub.days_left !== null && sub.days_left <= 7" [class.text-emerald-500]="sub.days_left === null || sub.days_left > 7">
+                                          {{ sub.days_left === null ? '—' : sub.days_left + ' days' }}
+                                      </span>
+                                  }
+                              </div>
+                          </div>
+
+                          @if (sub.status === 'ACTIVE' || sub.status === 'TRIALING') {
+                              <div class="flex flex-col gap-2 md:w-72">
+                                  <label class="text-[10px] font-bold uppercase tracking-wider opacity-60">Change Plan</label>
+                                  <div class="flex items-center gap-1.5">
+                                      <select (change)="selectedPlanId.set($any($event.target).value)"
+                                              [value]="selectedPlanId()"
+                                              class="app-input w-full px-3 py-2 rounded-lg text-xs border">
+                                          <option value="">{{ sub.plan.name }} (current)</option>
+                                          @for (plan of plans(); track plan.id) {
+                                              <option [value]="plan.id" [disabled]="plan.status !== 'ACTIVE'">{{ plan.name }} ({{ plan.price | currency: plan.currency:'symbol':'1.0-0' }})</option>
+                                          }
+                                      </select>
+                                      <button (click)="changePlan()"
+                                              [disabled]="!selectedPlanId() || selectedPlanId() === sub.plan_id"
+                                              class="px-3 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-40 flex items-center gap-1.5">
+                                          <span class="material-symbols-outlined text-sm">swap_horiz</span>
+                                          Apply
+                                      </button>
+                                  </div>
+                              </div>
+                          }
+                      </div>
+                  } @else {
+                      <p class="text-xs opacity-50 text-center py-6">This library has no active subscription.</p>
+                  }
+              </div>
+          </div>
+
+      } @else {
+          <div class="flex items-center justify-center h-[40vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[30vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+  </main>
+</div>

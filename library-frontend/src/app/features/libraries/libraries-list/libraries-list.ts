@@ -45,7 +45,8 @@ export class LibrariesList implements OnInit {
   }
 
   ngOnInit() {
-    this.librariesService.loadLibraries().subscribe();
+    // Include INACTIVE libraries so the admin can re-activate them.
+    this.librariesService.loadLibraries(true).subscribe();
   }
 
   /** Initialize form controls and validators for creating a library and owner */
@@ -135,6 +136,13 @@ export class LibrariesList implements OnInit {
   public deactivate(lib: LibraryItem) {
     if (confirm(`Are you sure you want to deactivate "${lib.name}"?`)) {
       this.librariesService.deactivateLibrary(lib.id).subscribe();
+    }
+  }
+
+  /** Re-activate an inactive library */
+  public activate(lib: LibraryItem) {
+    if (confirm(`Are you sure you want to activate "${lib.name}"?`)) {
+      this.librariesService.updateLibraryStatus(lib.id, 'ACTIVE').subscribe();
     }
   }
 }

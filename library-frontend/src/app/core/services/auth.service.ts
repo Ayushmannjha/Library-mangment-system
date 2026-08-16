@@ -16,7 +16,9 @@ import {
   LoginResponse,
   UserProfile,
   ApiResponse,
-  RoleName
+  RoleName,
+  RegisterLibraryRequest,
+  RegisterLibraryResponse
 } from '../models/auth.models';
 import { ToastService } from './toast.service';
 
@@ -51,11 +53,16 @@ export class AuthService {
 
   /**
    * Computed signal — current user ki primary role return karta hai.
-   * Route guards mein role-based access check ke liye use hota hai.
+   * Role hierarchy: SUPER_ADMIN > ADMIN > USER.
+   * Route guards aur sidebar visibility ke liye use hota hai.
    */
   primaryRole = computed<RoleName | null>(() => {
     const user = this.currentUser();
     if (!user || !user.roles?.length) return null;
+    const hierarchy: RoleName[] = ['SUPER_ADMIN', 'ADMIN', 'USER'];
+    for (const role of hierarchy) {
+      if (user.roles.includes(role)) return role;
+    }
     return user.roles[0] ?? null;
   });
 
@@ -173,6 +180,34 @@ export class AuthService {
         console.error('/auth/me failed', err);
         // /me fail hone ka matlab token expire ho gaya ya backend reject kar raha hai
         this.clearSession();
+        return EMPTY;
+      })
+    );
+  }
+
+  /**
+   * Brand-new library registration (public self-service).
+   * Library + owner admin + 14-day trial subscription ek saath banate hain.
+   */
+  registerLibrary(payload: RegisterLibraryRequest) {
+    this.isLoading.set(true);
+
+    return this.http.post<ApiResponse<RegisterLibraryResponse>>(
+      `${this.apiUrl}/auth/register-library`,
+      payload
+    ).pipe(
+      tap(response => {
+        this.isLoading.set(false);
+        if (response.success && response.data) {
+          const name = response.data.library.name;
+          this.toastService.showSuccess(`Library "${name}" registered successfully. Please login to continue.`);
+        }
+      }),
+      catchError((error: any) => {
+        this.isLoading.set(false);
+        console.error('Register library error:', error);
+        const message = error?.error?.message || 'Registration failed. Please try again.';
+        this.toastService.showError(message);
         return EMPTY;
       })
     );

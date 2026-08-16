@@ -12,6 +12,21 @@ export interface LoginRequest {
   password: string;
 }
 
+/**
+ * POST /api/v1/auth/register-library ka request body.
+ * Public self-service signup — library (brand) + owner admin ek saath.
+ */
+export interface RegisterLibraryRequest {
+  library_name: string;
+  library_city?: string;
+  library_phone?: string;
+  library_address?: string;
+  first_name: string;
+  last_name?: string;
+  email: string;
+  password: string;
+}
+
 // ---------- Response Models ----------
 
 /** Backend se aane wala JWT token pair */
@@ -37,6 +52,19 @@ export interface ApiResponse<T> {
   message?: string;
   statusCode?: number;
   meta?: Record<string, any>;
+}
+
+/** POST /api/v1/auth/register-library ka response data */
+export interface RegisterLibraryResponse {
+  user: UserProfile;
+  library: {
+    id: string;
+    name: string;
+    code: string;
+    city: string | null;
+    status: string;
+  };
+  roles: RoleName[];
 }
 
 // ---------- User / Profile Models ----------

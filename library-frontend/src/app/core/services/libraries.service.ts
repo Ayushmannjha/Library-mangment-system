@@ -43,6 +43,49 @@ export interface CreateLibraryPayload {
   owner_password: string;
 }
 
+/** Library owner user shown on the admin library-detail page */
+export interface LibraryOwner {
+  id: string;
+  first_name: string;
+  last_name?: string | null;
+  email: string;
+  phone?: string | null;
+  status: string;
+  roles: string[];
+}
+
+/** Plan summary embedded in a library subscription view */
+export interface LibraryPlanView {
+  id: string;
+  code: string;
+  name: string;
+  price: number;
+  currency: string;
+  billing_cycle: string;
+}
+
+/** Library subscription as returned by /libraries/:id/admin-detail */
+export interface LibrarySubscriptionView {
+  id: string;
+  plan_id: string;
+  status: string;
+  days_left: number | null;
+  trial_start_at?: string | null;
+  trial_end_at?: string | null;
+  start_at?: string | null;
+  end_at?: string | null;
+  price: number;
+  currency: string;
+  plan: LibraryPlanView;
+}
+
+/** Full admin detail payload for a single library */
+export interface LibraryDetail {
+  library: LibraryItem;
+  owner: LibraryOwner | null;
+  subscription: LibrarySubscriptionView | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -57,16 +100,22 @@ export class LibrariesService {
   /** Signal tracking total libraries count for pagination */
   public totalLibraries = signal<number>(0);
 
+  /** Signal holding the admin detail of the currently viewed library */
+  public libraryDetail = signal<LibraryDetail | null>(null);
+
   /** Signal tracking API loading status */
   public isLoading = signal<boolean>(false);
 
   /**
    * Load all libraries from backend (Super Admin authorized).
+   * When `includeInactive` is true, INACTIVE libraries are returned too so
+   * the admin can re-activate them.
    * Updates `libraries` and `totalLibraries` signals.
    */
-  loadLibraries(): Observable<ApiResponse<LibraryItem[]>> {
+  loadLibraries(includeInactive = false): Observable<ApiResponse<LibraryItem[]>> {
     this.isLoading.set(true);
-    return this.http.get<ApiResponse<LibraryItem[]>>(`${this.apiUrl}/libraries`).pipe(
+    const suffix = includeInactive ? '?include_inactive=true' : '';
+    return this.http.get<ApiResponse<LibraryItem[]>>(`${this.apiUrl}/libraries${suffix}`).pipe(
       tap((response) => {
         if (response.success && response.data) {
           this.libraries.set(response.data);
@@ -77,6 +126,50 @@ export class LibrariesService {
       catchError((err) => {
         this.isLoading.set(false);
         this.toastService.showError(err.error?.message || 'Failed to load libraries list');
+        return EMPTY;
+      })
+    );
+  }
+
+  /**
+   * Load the admin detail for one library: library row (any status), its
+   * owner user and the current subscription with expiry info.
+   */
+  loadLibraryDetail(id: string): Observable<ApiResponse<LibraryDetail>> {
+    this.isLoading.set(true);
+    return this.http.get<ApiResponse<LibraryDetail>>(`${this.apiUrl}/libraries/${id}/admin-detail`).pipe(
+      tap((response) => {
+        if (response.success && response.data) {
+          this.libraryDetail.set(response.data);
+        }
+        this.isLoading.set(false);
+      }),
+      catchError((err) => {
+        this.isLoading.set(false);
+        this.toastService.showError(err.error?.message || 'Failed to load library details');
+        return EMPTY;
+      })
+    );
+  }
+
+  /**
+   * Activate / deactivate a library (status toggle, Super Admin only).
+   */
+  updateLibraryStatus(id: string, status: 'ACTIVE' | 'INACTIVE'): Observable<ApiResponse<LibraryItem>> {
+    this.isLoading.set(true);
+    return this.http.patch<ApiResponse<LibraryItem>>(`${this.apiUrl}/libraries/${id}/status`, { status }).pipe(
+      tap((response) => {
+        if (response.success && response.data) {
+          this.toastService.showSuccess(
+            `Library "${response.data.name}" ${status === 'ACTIVE' ? 'activated' : 'deactivated'} successfully!`
+          );
+          this.loadLibraries(true).subscribe();
+        }
+        this.isLoading.set(false);
+      }),
+      catchError((err) => {
+        this.isLoading.set(false);
+        this.toastService.showError(err.error?.message || `Failed to ${status === 'ACTIVE' ? 'activate' : 'deactivate'} library`);
         return EMPTY;
       })
     );

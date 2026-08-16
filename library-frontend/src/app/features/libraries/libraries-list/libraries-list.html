@@ -98,7 +98,7 @@
                                           <span class="material-symbols-outlined text-sm">local_library</span>
                                       </div>
                                       <div>
-                                          <div class="font-bold text-xs">{{ lib.name }}</div>
+                                          <a routerLink="/super-admin/libraries/{{ lib.id }}" class="font-bold text-xs hover:text-amber-500 transition-colors">{{ lib.name }}</a>
                                           <div class="text-[10px] opacity-50 mt-0.5">ID: {{ lib.id }}</div>
                                       </div>
                                   </div>
@@ -125,7 +125,14 @@
                                       <button (click)="deactivate(lib)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-rose-500 transition-colors" title="Deactivate">
                                           <span class="material-symbols-outlined text-[18px]">block</span>
                                       </button>
+                                  } @else {
+                                      <button (click)="activate(lib)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-emerald-500 transition-colors" title="Activate">
+                                          <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                      </button>
                                   }
+                                  <a routerLink="/super-admin/libraries/{{ lib.id }}" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-amber-500 transition-colors inline-flex align-middle" title="View details">
+                                      <span class="material-symbols-outlined text-[18px]">visibility</span>
+                                  </a>
                               </td>
                           </tr>
                       } @empty {

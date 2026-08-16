@@ -28,10 +28,10 @@ export const roleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
   // Agar koi role restriction nahi toh allow karo
   if (allowedRoles.length === 0) return true;
 
-  // User ki primary role check karo
-  const userRole = authService.primaryRole();
+  // User ke saare roles allowed roles se match karo (kisi bhi role se allow)
+  const userRoles: RoleName[] = authService.currentUser()?.roles ?? [];
 
-  if (userRole && allowedRoles.includes(userRole)) {
+  if (userRoles.some(role => allowedRoles.includes(role))) {
     return true;
   }
 

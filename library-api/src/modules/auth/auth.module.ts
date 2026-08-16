@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import type { SignOptions } from 'jsonwebtoken';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AdminBootstrapService } from './admin-bootstrap.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 
@@ -37,6 +38,9 @@ import { PermissionsGuard } from '../../common/guards/permissions.guard';
   controllers: [AuthController],
   providers: [
     AuthService,
+    // Upserts the platform administrator from ADMIN_EMAIL / ADMIN_PASSWORD
+    // (env config) on startup.
+    AdminBootstrapService,
     // Makes authentication mandatory app-wide without decorating every
     // single controller. Routes opt OUT via the @Public() decorator.
     {

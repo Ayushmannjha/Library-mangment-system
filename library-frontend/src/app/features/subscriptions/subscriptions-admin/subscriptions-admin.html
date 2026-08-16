@@ -1,0 +1,143 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Area -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm">
+          <span class="text-sm font-bold opacity-80">Library Subscriptions</span>
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+      <!-- Hero Header Banner -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">card_membership</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">Library Subscriptions & Expiry</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Track every library's plan, renewals and plans expiring within the next 7 days.</p>
+              </div>
+          </div>
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="flex flex-wrap gap-2">
+          @for (chip of chips; track chip.key) {
+              <button (click)="setFilter(chip.key)"
+                      class="px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border"
+                      [class.bg-amber-500/15]="chip.warn && chip.key !== 'EXPIRED'"
+                      [class.text-rose-500]="chip.key === 'EXPIRED'"
+                      [class.bg-slate-500/10]="chip.key === 'ALL'"
+                      [class.opacity-40]="chip.key === 'TRIALING' || chip.key === 'CANCELLED'"
+                      [class.app-badge-active]="activeFilter() === chip.key">
+                  {{ chip.label }} <span class="opacity-60">({{ chipCount(chip) }})</span>
+              </button>
+          }
+      </div>
+
+      <!-- Subscriptions Table -->
+      <div class="app-card rounded-xl shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+              <table class="app-table whitespace-nowrap">
+                  <thead>
+                      <tr>
+                          <th>Library</th>
+                          <th>Plan</th>
+                          <th>Status</th>
+                          <th>Ends</th>
+                          <th class="text-right">Days Left</th>
+                          <th class="text-right">Actions</th>
+                      </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200/10">
+                      @for (row of filteredSubscriptions(); track row.id) {
+                          <tr class="hover:bg-amber-500/[0.02] transition-colors"
+                              [class.bg-rose-500/[0.04]]="row.status === 'EXPIRED'"
+                              [class.bg-amber-500/[0.06]]="row.expiring_soon">
+                              <td class="py-3 px-4">
+                                  <a routerLink="/super-admin/libraries/{{ row.library_id }}" class="font-bold text-xs hover:text-amber-500 transition-colors">
+                                      {{ row.library.name }}
+                                  </a>
+                                  <div class="text-[10px] opacity-60 mt-0.5">{{ row.library.code }} · {{ row.library.city || '—' }}</div>
+                              </td>
+                              <td class="py-3 px-4">
+                                  <div class="text-xs font-semibold">{{ row.plan.name }}</div>
+                                  <div class="text-[10px] opacity-60 mt-0.5">{{ row.price | currency: row.currency:'symbol':'1.0-0' }} / {{ row.plan.billing_cycle }}</div>
+                              </td>
+                              <td class="py-3 px-4">
+                                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] shrink-0"
+                                        [class.app-badge-active]="row.status === 'ACTIVE'"
+                                        [class.app-badge-maintenance]="row.status === 'TRIALING'"
+                                        [class.app-badge-inactive]="row.status === 'CANCELLED'"
+                                        [class.app-badge-expired]="row.status === 'EXPIRED'">
+                                      {{ row.status }}
+                                  </span>
+                              </td>
+                              <td class="py-3 px-4 text-xs opacity-70">
+                                  {{ (row.status === 'TRIALING' ? row.trial_end_at : row.end_at) | date:'dd MMM yyyy' }}
+                              </td>
+                              <td class="py-3 px-4 text-right">
+                                  @if (row.status === 'EXPIRED') {
+                                      <span class="text-xs font-extrabold text-rose-500">Expired</span>
+                                  } @else if (row.days_left !== null && row.days_left !== undefined) {
+                                      <span class="text-xs font-extrabold"
+                                            [class.text-amber-500]="row.expiring_soon"
+                                            [class.text-emerald-500]="!row.expiring_soon && row.days_left >= 0">
+                                          {{ row.days_left }}d
+                                      </span>
+                                  } @else {
+                                      <span class="text-xs opacity-50">—</span>
+                                  }
+                              </td>
+                              <td class="py-3 px-4 text-right">
+                                  @if (row.status === 'ACTIVE' || row.status === 'TRIALING') {
+                                      <div class="inline-flex items-center gap-1.5">
+                                          <select (change)="trackPlan(row, $any($event.target).value)"
+                                                  [value]="selectedPlan(row)"
+                                                  class="app-input px-2 py-1.5 rounded-lg text-[11px] border max-w-[140px]">
+                                              <option value="">Change plan…</option>
+                                              @for (plan of plans(); track plan.id) {
+                                                  <option [value]="plan.id" [disabled]="plan.status !== 'ACTIVE'">{{ plan.name }} ({{ plan.price | currency: plan.currency:'symbol':'1.0-0' }})</option>
+                                              }
+                                          </select>
+                                          @if (selectedPlan(row)) {
+                                              <button (click)="changePlan(row)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 hover:text-amber-500 transition-colors" title="Apply plan change">
+                                                  <span class="material-symbols-outlined text-base">check_circle</span>
+                                              </button>
+                                          }
+                                      </div>
+                                  } @else {
+                                      <span class="text-[10px] opacity-40">No active plan</span>
+                                  }
+                              </td>
+                          </tr>
+                      } @empty {
+                          <tr>
+                              <td colspan="6" class="py-8 text-center opacity-60 text-sm">No subscriptions found.</td>
+                          </tr>
+                      }
+                  </tbody>
+              </table>
+          </div>
+      </div>
+
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[30vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+  </main>
+</div>

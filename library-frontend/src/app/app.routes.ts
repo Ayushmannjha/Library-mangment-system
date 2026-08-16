@@ -25,6 +25,12 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/login/login').then(m => m.Login)
   },
 
+  /** Register (branding) page — public self-service library signup */
+  {
+    path: 'register',
+    loadComponent: () => import('./features/auth/register/register').then(m => m.Register)
+  },
+
   /** Unauthorized page — role mismatch hone par dikhta hai */
   {
     path: 'unauthorized',
@@ -44,6 +50,18 @@ export const routes: Routes = [
       {
         path: 'libraries',
         loadComponent: () => import('./features/libraries/libraries-list/libraries-list').then(m => m.LibrariesList)
+      },
+      {
+        path: 'libraries/:id',
+        loadComponent: () => import('./features/library-detail/library-detail').then(m => m.LibraryDetail)
+      },
+      {
+        path: 'plans',
+        loadComponent: () => import('./features/plans/plans-list/plans-list').then(m => m.PlansList)
+      },
+      {
+        path: 'subscriptions',
+        loadComponent: () => import('./features/subscriptions/subscriptions-admin/subscriptions-admin').then(m => m.SubscriptionsAdmin)
       }
     ]
   },

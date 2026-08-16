@@ -1,0 +1,7 @@
+/* subscriptions-admin.css — inherits shared theme classes from styles.css.
+   Applies an "expired" badge color that is not defined globally. */
+.app-badge-expired {
+  background: rgba(244, 63, 94, 0.12);
+  color: #f43f5e;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}

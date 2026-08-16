@@ -11,6 +11,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RegisterLibraryDto } from './dto/register-library.dto';
 
 /**
  * Authentication business logic.
@@ -64,6 +65,122 @@ export class AuthService {
 
     // NEVER return the password_hash (AGENTS.md Part 2, rule 51).
     return this.toSafeUser(user);
+  }
+
+  /**
+   * Registers a brand-new library together with its owner admin account.
+   * Runs inside a transaction so a failure cannot leave a half-created
+   * library or orphaned user. The new library automatically gets a 14-day
+   * TRIALING subscription on the cheapest active plan so it shows up in the
+   * super-admin subscriptions view immediately.
+   */
+  async registerLibrary(dto: RegisterLibraryDto) {
+    const existing = await this.prisma.users.findFirst({
+      where: { email: dto.email },
+    });
+    if (existing) {
+      throw new ConflictException('Email is already registered');
+    }
+
+    const passwordHash = await argon2.hash(dto.password);
+    const libraryCode = await this.buildUniqueLibraryCode(dto.library_name);
+    const cheapestPlan = await this.prisma.subscription_plans.findFirst({
+      where: { status: 'ACTIVE' },
+      orderBy: { price: 'asc' },
+    });
+
+    const [user, library, roles] = await this.prisma.$transaction(async (tx) => {
+      const newUser = await tx.users.create({
+        data: {
+          email: dto.email,
+          first_name: dto.first_name,
+          last_name: dto.last_name,
+          phone: dto.library_phone ?? null,
+          password_hash: passwordHash,
+          library_id: null,
+          status: 'ACTIVE',
+        },
+      });
+
+      const newLibrary = await tx.libraries.create({
+        data: {
+          name: dto.library_name,
+          code: libraryCode,
+          email: dto.email,
+          phone: dto.library_phone,
+          city: dto.library_city,
+          address: dto.library_address,
+          status: 'ACTIVE',
+          created_by: newUser.id,
+        },
+      });
+
+      const updatedUser = await tx.users.update({
+        where: { id: newUser.id },
+        data: { library_id: newLibrary.id },
+      });
+
+      const roleCodes = ['ADMIN', 'USER'];
+      const foundRoles = await tx.roles.findMany({
+        where: { code: { in: roleCodes } },
+      });
+      for (const role of foundRoles) {
+        await tx.user_roles.create({
+          data: { user_id: newUser.id, role_id: role.id },
+        });
+      }
+
+      if (cheapestPlan) {
+        const now = new Date();
+        const trialEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+        await tx.library_subscriptions.create({
+          data: {
+            library_id: newLibrary.id,
+            plan_id: cheapestPlan.id,
+            status: 'TRIALING',
+            trial_start_at: now,
+            trial_end_at: trialEnd,
+            price: 0,
+            currency: cheapestPlan.currency,
+            created_by: newUser.id,
+          },
+        });
+      }
+
+      return [updatedUser, newLibrary, foundRoles];
+    });
+
+    return {
+      user: this.toSafeUser(user),
+      library: {
+        id: library.id.toString(),
+        name: library.name,
+        code: library.code,
+        city: library.city,
+        status: library.status,
+      },
+      roles: roles.map((role) => role.code),
+    };
+  }
+
+  /** Generates a unique library code from its name, e.g. "SUNRISE-DL" -> "SUNRISE-DL" */
+  private async buildUniqueLibraryCode(name: string): Promise<string> {
+    const base = name
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40);
+    const fallback = 'LIB';
+
+    let code = base || fallback;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const candidate = attempt === 0 ? code : `${code}-${attempt + 1}`;
+      const clash = await this.prisma.libraries.findUnique({
+        where: { code: candidate },
+      });
+      if (!clash) return candidate;
+    }
+    return `${code}-${Date.now().toString(36).toUpperCase()}`;
   }
 
   async login(dto: LoginDto) {
