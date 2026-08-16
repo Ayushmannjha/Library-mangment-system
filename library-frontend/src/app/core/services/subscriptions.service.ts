@@ -265,4 +265,22 @@ export class SubscriptionsService {
       })
     );
   }
+
+  /** Admin: confirm payment and activate a PENDING library subscription */
+  confirmSubscription(subscriptionId: string): Observable<ApiResponse<LibrarySubscription>> {
+    this.isLoading.set(true);
+    return this.http.post<ApiResponse<LibrarySubscription>>(`${this.apiUrl}/subscriptions/libraries/${subscriptionId}/confirm`, {}).pipe(
+      tap((response) => {
+        if (response.success) {
+          this.toastService.showSuccess('Subscription confirmed and library activated successfully!');
+        }
+        this.isLoading.set(false);
+      }),
+      catchError((err) => {
+        this.isLoading.set(false);
+        this.toastService.showError(err.error?.message || 'Failed to confirm subscription');
+        return EMPTY;
+      })
+    );
+  }
 }

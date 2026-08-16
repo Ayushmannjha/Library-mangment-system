@@ -18,7 +18,8 @@ import {
   ApiResponse,
   RoleName,
   RegisterLibraryRequest,
-  RegisterLibraryResponse
+  RegisterLibraryResponse,
+  PublicPlan
 } from '../models/auth.models';
 import { ToastService } from './toast.service';
 
@@ -121,17 +122,15 @@ export class AuthService {
           // Roles sirf /me se aati hain — redirect se pehle profile load karo
           this.loadCurrentUser().subscribe({
             next: () => {
-              console.log('loadCurrentUser next called. User:', this.currentUser());
               this.redirectAfterLogin(this.currentUser());
             },
             error: (err) => {
               console.error('loadCurrentUser error:', err);
-              this.router.navigate(['/dashboard']);
+              // Even if /me fails, login response already has roles — use them for redirect
+              this.redirectAfterLogin(this.currentUser());
             },
             complete: () => {
-              console.log('loadCurrentUser complete called');
-              // Fallback just in case next was skipped (e.g. EMPTY was returned)
-              if (!this.currentUser()?.roles) {
+              if (!this.currentUser()?.roles?.length) {
                 this.router.navigate(['/dashboard']);
               }
             }
@@ -141,6 +140,8 @@ export class AuthService {
       catchError(error => {
         console.error('Login error:', error);
         this.isLoading.set(false);
+        const message = error?.error?.message || 'Login failed. Please try again.';
+        this.toastService.showError(message);
         return EMPTY;
       })
     );
@@ -148,17 +149,9 @@ export class AuthService {
 
   /**
    * User ko logout karta hai.
-   * Token backend se revoke karta hai (agar available), local state clear karta hai.
+   * Client-side session clear karta hai aur login page par bhejta hai.
    */
   logout() {
-    const refreshToken = this.getRefreshToken();
-
-    // Backend ko bhi batao ki session khatam hua (best effort)
-    if (refreshToken) {
-      this.http.post(`${this.apiUrl}/auth/logout`, { refresh_token: refreshToken })
-        .subscribe({ error: () => {} }); // Error ignore karo, local cleanup zaroori hai
-    }
-
     // Local state aur tokens clear karo
     this.clearSession();
     this.toastService.showSuccess('Logged out successfully.');
@@ -178,8 +171,8 @@ export class AuthService {
       }),
       catchError((err) => {
         console.error('/auth/me failed', err);
-        // /me fail hone ka matlab token expire ho gaya ya backend reject kar raha hai
-        this.clearSession();
+        // Don't clear session here — the login response already set the user with roles.
+        // Only clear if explicitly logging out or token is truly invalid (handled by interceptor).
         return EMPTY;
       })
     );
@@ -200,7 +193,7 @@ export class AuthService {
         this.isLoading.set(false);
         if (response.success && response.data) {
           const name = response.data.library.name;
-          this.toastService.showSuccess(`Library "${name}" registered successfully. Please login to continue.`);
+          this.toastService.showSuccess(`Library "${name}" registered successfully. Your account will be activated after administrator confirmation.`);
         }
       }),
       catchError((error: any) => {
@@ -210,6 +203,50 @@ export class AuthService {
         this.toastService.showError(message);
         return EMPTY;
       })
+    );
+  }
+
+  /** Step 1: Request a password-reset OTP (public, always returns generic message). */
+  forgotPassword(email: string) {
+    this.isLoading.set(true);
+    return this.http.post<ApiResponse<null>>(
+      `${this.apiUrl}/auth/forgot-password`,
+      { email }
+    ).pipe(
+      tap(() => this.isLoading.set(false)),
+      catchError((error: any) => {
+        this.isLoading.set(false);
+        const message = error?.error?.message || 'Failed to send OTP. Please try again.';
+        this.toastService.showError(message);
+        return EMPTY;
+      })
+    );
+  }
+
+  /** Step 2: Verify OTP + set new password (public). */
+  resetPassword(email: string, otp: string, newPassword: string) {
+    this.isLoading.set(true);
+    return this.http.post<ApiResponse<null>>(
+      `${this.apiUrl}/auth/reset-password`,
+      { email, otp, new_password: newPassword }
+    ).pipe(
+      tap(() => {
+        this.isLoading.set(false);
+        this.toastService.showSuccess('Password updated successfully. Please login with your new password.');
+      }),
+      catchError((error: any) => {
+        this.isLoading.set(false);
+        const message = error?.error?.message || 'Failed to reset password. Please try again.';
+        this.toastService.showError(message);
+        return EMPTY;
+      })
+    );
+  }
+
+  /** Fetches all active plans for the public registration form (no auth required). */
+  getPublicPlans() {
+    return this.http.get<ApiResponse<PublicPlan[]>>(
+      `${this.apiUrl}/subscriptions/plans/public`
     );
   }
 

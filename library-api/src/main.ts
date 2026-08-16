@@ -38,6 +38,9 @@ async function bootstrap() {
         'http://localhost:4201',
         'http://127.0.0.1:4202',
         'http://localhost:4202',
+        'https://lms-student.antss.in',
+        'https://lms.antss.in',
+        'https://lms-api.antss.in',
       ],
       credentials: true,
     });

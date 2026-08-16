@@ -14,7 +14,7 @@ export interface LoginRequest {
 
 /**
  * POST /api/v1/auth/register-library ka request body.
- * Public self-service signup — library (brand) + owner admin ek saath.
+ * Public self-service signup — library (brand) + owner admin + plan selection.
  */
 export interface RegisterLibraryRequest {
   library_name: string;
@@ -25,6 +25,18 @@ export interface RegisterLibraryRequest {
   last_name?: string;
   email: string;
   password: string;
+  plan_id: number;
+}
+
+/** Public plan object returned by GET /subscriptions/plans/public */
+export interface PublicPlan {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  price: number;
+  currency: string;
+  billing_cycle: string;
 }
 
 // ---------- Response Models ----------

@@ -16,6 +16,8 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RegisterLibraryDto } from './dto/register-library.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 /**
  * Thin controller — maps HTTP verb + route to a service call (AGENTS.md
@@ -54,9 +56,37 @@ export class AuthController {
   })
   async registerLibrary(@Body() dto: RegisterLibraryDto) {
     return {
-      message: 'Library registered successfully',
+      message: 'Registration submitted successfully. Your account will be activated after administrator confirmation.',
       data: await this.authService.registerLibrary(dto),
     };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Request password-reset OTP',
+    description:
+      'If the email is registered and active, a 6-digit OTP is sent. ' +
+      'The response is always the same to prevent email enumeration.',
+  })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto.email);
+    return { message: 'If the email is registered, an OTP has been sent.' };
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify OTP and set new password',
+    description: 'Validates the 6-digit OTP and updates the account password.',
+  })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.email, dto.otp, dto.new_password);
+    return { message: 'Password updated successfully. Please login with your new password.' };
   }
 
   @Public()

@@ -1,32 +1,35 @@
 /**
  * register.ts
  * Register (Branding) page — public self-service signup.
- * Library owner apni library + admin account ek saath register karta hai.
- * Success par login page par redirect hota hai.
+ * Library owner selects a plan + enters library + admin details.
+ * Library + user are created as INACTIVE; subscription as PENDING.
+ * A super-admin must confirm payment before the owner can log in.
  */
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { DecimalPipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { PublicPlan } from '../../../core/models/auth.models';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, DecimalPipe],
   templateUrl: './register.html',
   styleUrl: './register.css'
 })
-export class Register {
+export class Register implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   public authService = inject(AuthService);
 
-  /** Registration form definition with validators */
   registerForm: FormGroup;
-
-  /** Password field show/hide state */
   showPassword = false;
+  plans: PublicPlan[] = [];
+  selectedPlanId: number | null = null;
+  registrationSuccess = signal(false);
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -36,20 +39,30 @@ export class Register {
       first_name: ['', [Validators.required, Validators.maxLength(100)]],
       last_name: ['', [Validators.maxLength(100)]],
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(8)]]
+      password: ['', [Validators.required, Validators.minLength(8)]],
+      plan_id: [null, [Validators.required]]
     });
   }
 
-  /** Password visibility toggle */
+  ngOnInit() {
+    this.authService.getPublicPlans().subscribe({
+      next: (res) => {
+        if (res.success && res.data) {
+          this.plans = res.data;
+        }
+      }
+    });
+  }
+
   togglePassword() {
     this.showPassword = !this.showPassword;
   }
 
-  /**
-   * Form submit handler.
-   * Valid form hone par AuthService.registerLibrary() call karta hai.
-   * Success par /login par redirect, error par toast already dikhaya jata hai.
-   */
+  selectPlan(planId: number) {
+    this.selectedPlanId = planId;
+    this.registerForm.patchValue({ plan_id: planId });
+  }
+
   onSubmit() {
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
@@ -58,7 +71,7 @@ export class Register {
 
     const payload = this.registerForm.value;
     this.authService.registerLibrary(payload).subscribe({
-      next: () => this.router.navigate(['/login'])
+      next: () => this.registrationSuccess.set(true)
     });
   }
 }

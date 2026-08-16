@@ -3,6 +3,8 @@
 <!-- Left Column: Form Area -->
 <section class="w-full lg:w-1/2 flex flex-col justify-center items-center px-margin-mobile md:px-margin-desktop bg-surface relative z-10 py-12">
 <div class="w-full max-w-md flex flex-col space-y-xl">
+
+@if (!registrationSuccess()) {
 <!-- Branding & Header -->
 <header class="flex flex-col items-center text-center space-y-sm">
 <div class="w-16 h-16 rounded-2xl bg-surface-container-high flex items-center justify-center mb-md border border-outline-variant/30 shadow-sm">
@@ -123,6 +125,36 @@
     }
   </div>
 
+  <!-- Select Plan -->
+  <div class="flex flex-col space-y-xs">
+    <label class="font-label-md text-label-md text-on-surface ml-1">Choose Your Plan</label>
+    <div class="grid grid-cols-1 gap-3">
+      @for (plan of plans; track plan.id) {
+        <button type="button" (click)="selectPlan(+plan.id)"
+                class="relative flex items-center justify-between p-4 rounded-xl border-2 text-left transition-all"
+                [class.border-primary]="selectedPlanId === +plan.id"
+                [class.bg-primary-container/10]="selectedPlanId === +plan.id"
+                [class.border-outline-variant]="selectedPlanId !== +plan.id"
+                [class.hover:border-outline]="selectedPlanId !== +plan.id">
+          <div class="flex flex-col">
+            <span class="font-label-lg text-label-lg text-on-surface">{{ plan.name }}</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">{{ plan.billing_cycle }}</span>
+          </div>
+          <div class="text-right">
+            <span class="font-headline-sm text-headline-sm text-on-surface">₹{{ plan.price | number }}</span>
+            <span class="font-body-xs text-body-xs text-on-surface-variant block">/month</span>
+          </div>
+          @if (selectedPlanId === +plan.id) {
+            <span class="absolute top-2 right-2 material-symbols-outlined text-primary text-lg">check_circle</span>
+          }
+        </button>
+      }
+    </div>
+    @if (registerForm.get('plan_id')?.invalid && registerForm.get('plan_id')?.touched) {
+      <span class="text-error text-xs ml-1">Please select a subscription plan.</span>
+    }
+  </div>
+
   <!-- Submit Button -->
   <button [disabled]="authService.isLoading()"
           class="w-full h-12 rounded-xl bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-md text-label-md flex justify-center items-center gap-2 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] mt-sm"
@@ -145,6 +177,40 @@
   </p>
   <p class="font-body-md text-body-md text-on-surface-variant text-xs opacity-70">Powered by Lexicon LMS Admin</p>
 </footer>
+
+} @else {
+<!-- Registration Success: Pending Confirmation Notice -->
+<div class="flex flex-col items-center text-center space-y-lg py-8">
+  <div class="w-20 h-20 rounded-full bg-amber-500/15 flex items-center justify-center">
+    <span class="material-symbols-outlined text-amber-600 text-4xl">schedule</span>
+  </div>
+  <div class="flex flex-col space-y-sm">
+    <h1 class="font-display-lg text-display-lg text-on-surface tracking-tight">Registration Submitted!</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed max-w-sm">
+      Your library registration has been received. Your account is currently <strong class="text-amber-600">pending approval</strong>.
+    </p>
+  </div>
+  <div class="w-full max-w-sm bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 text-left">
+    <div class="flex items-start gap-3">
+      <span class="material-symbols-outlined text-amber-600 text-xl mt-0.5">info</span>
+      <div class="flex flex-col space-y-xs">
+        <p class="font-label-md text-label-md text-on-surface">What happens next?</p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">
+          An administrator will review your plan request and activate your account. Once approved, you will be able to log in and start using the LMS.
+        </p>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">
+          If you have any questions, please contact the administrator.
+        </p>
+      </div>
+    </div>
+  </div>
+  <a routerLink="/login"
+     class="w-full max-w-sm h-12 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md flex justify-center items-center gap-2 transition-all active:scale-[0.98]">
+    <span class="material-symbols-outlined text-xl">arrow_back</span>
+    Back to Login
+  </a>
+</div>
+}
 </div>
 </section>
 

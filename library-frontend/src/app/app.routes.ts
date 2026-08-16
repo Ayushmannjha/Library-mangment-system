@@ -31,6 +31,18 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/register/register').then(m => m.Register)
   },
 
+  /** Forgot Password — enter email to receive OTP */
+  {
+    path: 'forgot-password',
+    loadComponent: () => import('./features/auth/forgot-password/forgot-password').then(m => m.ForgotPassword)
+  },
+
+  /** Reset Password — enter OTP + new password */
+  {
+    path: 'reset-password',
+    loadComponent: () => import('./features/auth/reset-password/reset-password').then(m => m.ResetPassword)
+  },
+
   /** Unauthorized page — role mismatch hone par dikhta hai */
   {
     path: 'unauthorized',

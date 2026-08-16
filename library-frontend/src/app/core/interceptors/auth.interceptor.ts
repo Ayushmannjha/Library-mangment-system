@@ -1,41 +1,42 @@
-// src/app/core/interceptors/auth.interceptor.ts
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError } from 'rxjs/operators';
-import { throwError } from 'rxjs';
+import { catchError, throwError } from 'rxjs';
+
+const ACCESS_TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
 
 /**
- * Auth Interceptor (Functional)
- * Yeh interceptor har HTTP request ke saath JWT token attach karta hai (agar available ho).
- * Agar backend se 401 Unauthorized error aata hai, toh user ko login page par redirect kar deta hai.
+ * Auth Interceptor — attaches JWT Bearer token and handles 401 globally.
+ *
+ * IMPORTANT: Only triggers on 401 Unauthorized.
+ * All other errors (404, 500, 429, etc.) pass through untouched so that
+ * individual service error-handlers can deal with them.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
 
-  // LocalStorage se JWT access token nikalte hain
-  const token = localStorage.getItem('access_token');
-  
-  // Nayi request clone karte hain
   let authReq = req;
-
-  // Agar token hai, toh Authorization header set karte hain
   if (token) {
     authReq = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
+      setHeaders: { Authorization: `Bearer ${token}` }
     });
   }
 
-  // Request ko aage bhejte hain aur errors ko handle karte hain
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Agar 401 (Unauthorized) error aata hai, matlab token expire ho gaya ya invalid hai
       if (error.status === 401) {
-        // Local storage clear karke login page par bhej do
-        localStorage.removeItem('access_token');
-        router.navigate(['/login']);
+        // Only act on 401 — clear everything and redirect
+        localStorage.removeItem(ACCESS_TOKEN_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+
+        // Avoid redirect loops: only navigate if not already on a public page
+        const currentUrl = router.url;
+        const publicPaths = ['/login', '/register', '/forgot-password', '/reset-password'];
+        if (!publicPaths.some(p => currentUrl.startsWith(p))) {
+          router.navigate(['/login']);
+        }
       }
       return throwError(() => error);
     })

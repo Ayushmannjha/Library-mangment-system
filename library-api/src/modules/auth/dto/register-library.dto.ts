@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
@@ -11,7 +12,9 @@ import {
 /**
  * Request body for POST /api/v1/auth/register-library.
  * Lets a brand-new library owner register their library + admin account
- * in a single public call (whitelisted by the global ValidationPipe).
+ * and select a subscription plan — all in a single public call.
+ * The library + user are created as INACTIVE; the subscription as PENDING.
+ * A super-admin must confirm payment to activate the account.
  */
 export class RegisterLibraryDto {
   @ApiProperty({ description: 'Library / brand name', maxLength: 150 })
@@ -62,4 +65,9 @@ export class RegisterLibraryDto {
   @IsNotEmpty()
   @MinLength(8)
   password!: string;
+
+  @ApiProperty({ description: 'Subscription plan ID to purchase' })
+  @IsNumber()
+  @IsNotEmpty()
+  plan_id!: number;
 }

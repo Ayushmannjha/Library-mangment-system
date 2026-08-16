@@ -12,13 +12,14 @@ import { RouterLink } from '@angular/router';
 import { SubscriptionsService, SubscriptionPlan, LibrarySubscriptionAdminRow } from '../../../core/services/subscriptions.service';
 import { ThemeService } from '../../../core/services/theme.service';
 
-type FilterKey = 'ALL' | 'ACTIVE' | 'EXPIRING' | 'EXPIRED' | 'TRIALING' | 'CANCELLED';
+type FilterKey = 'ALL' | 'PENDING' | 'ACTIVE' | 'EXPIRING' | 'EXPIRED' | 'TRIALING' | 'CANCELLED';
 
 interface FilterChip {
   key: FilterKey;
   label: string;
   count: number;
   warn?: boolean;
+  accent?: boolean;
 }
 
 @Component({
@@ -51,6 +52,7 @@ export class SubscriptionsAdmin implements OnInit {
   });
 
   /** Count badges for the filter chips */
+  public pendingCount = computed(() => this.allSubscriptions().filter(s => s.status === 'PENDING').length);
   public expiringCount = computed(() => this.allSubscriptions().filter(s => s.expiring_soon || s.status === 'EXPIRED').length);
   public activeCount = computed(() => this.allSubscriptions().filter(s => s.status === 'ACTIVE').length);
   public expiredCount = computed(() => this.allSubscriptions().filter(s => s.status === 'EXPIRED').length);
@@ -58,6 +60,7 @@ export class SubscriptionsAdmin implements OnInit {
   /** Filter chip definitions for the template */
   public chips: FilterChip[] = [
     { key: 'ALL', label: 'All', count: 0 },
+    { key: 'PENDING', label: 'Awaiting Payment', count: 0, accent: true },
     { key: 'ACTIVE', label: 'Active', count: 0 },
     { key: 'EXPIRING', label: 'Expiring Soon', count: 0, warn: true },
     { key: 'EXPIRED', label: 'Expired', count: 0, warn: true },
@@ -69,6 +72,8 @@ export class SubscriptionsAdmin implements OnInit {
     switch (chip.key) {
       case 'ALL':
         return this.total();
+      case 'PENDING':
+        return this.pendingCount();
       case 'ACTIVE':
         return this.activeCount();
       case 'EXPIRING':
@@ -110,6 +115,18 @@ export class SubscriptionsAdmin implements OnInit {
     this.subscriptionsService.changeLibraryPlan(row.id, planId).subscribe({
       next: () => {
         this.selectedPlanId.set({ ...this.selectedPlanId(), [row.id]: '' });
+        this.subscriptionsService.loadAllLibrarySubscriptions({ includeInactive: true }).subscribe();
+      }
+    });
+  }
+
+  /** Confirm payment and activate a PENDING subscription */
+  public confirmSubscription(row: LibrarySubscriptionAdminRow) {
+    if (!confirm(`Confirm payment and activate "${row.library.name}" (${row.plan.name} — ₹${row.price})?`)) {
+      return;
+    }
+    this.subscriptionsService.confirmSubscription(row.id).subscribe({
+      next: () => {
         this.subscriptionsService.loadAllLibrarySubscriptions({ includeInactive: true }).subscribe();
       }
     });

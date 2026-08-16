@@ -228,7 +228,9 @@ export class SubscriptionsService {
       list = list.filter((s) => s.expiring_soon || s.status === 'EXPIRED');
     }
     if (!opts.includeInactive) {
-      list = list.filter((s) => s.library.status === 'ACTIVE');
+      // PENDING subscriptions are for newly-registered libraries awaiting
+      // admin activation — always show them regardless of library status.
+      list = list.filter((s) => s.library.status === 'ACTIVE' || s.status === 'PENDING');
     }
 
     // Soonest-to-expire first (EXPIRED at the top).
@@ -432,5 +434,81 @@ export class SubscriptionsService {
     });
 
     return this.mapSubscriptionDecimalOutput(updated);
+  }
+
+  /**
+   * Admin confirms payment for a PENDING subscription.
+   * Activates the subscription, the library, and the owner user in one
+   * transaction so they can log in immediately after.
+   */
+  async confirmSubscription(subscriptionId: string, user: AuthenticatedUser) {
+    const subId = BigInt(subscriptionId);
+    const subscription = await this.prisma.library_subscriptions.findUnique({
+      where: { id: subId },
+      include: { libraries: true },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.status !== 'PENDING') {
+      throw new BadRequestException(
+        `Cannot confirm a subscription with status "${subscription.status}" — only PENDING subscriptions can be confirmed`,
+      );
+    }
+
+    const now = new Date();
+    const startAt = now;
+    // Default: 1 month from now (simplified — matches MONTHLY billing cycle)
+    const endAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Activate the subscription
+      await tx.library_subscriptions.update({
+        where: { id: subId },
+        data: {
+          status: 'ACTIVE',
+          start_at: startAt,
+          end_at: endAt,
+          updated_by: BigInt(user.id),
+          updated_at: now,
+        },
+      });
+
+      // 2. Activate the library
+      await tx.libraries.update({
+        where: { id: subscription.library_id },
+        data: {
+          status: 'ACTIVE',
+          updated_by: BigInt(user.id),
+          updated_at: now,
+        },
+      });
+
+      // 3. Activate the owner user (find user linked to this library with ADMIN role)
+      const ownerUser = await tx.users.findFirst({
+        where: {
+          library_id: subscription.library_id,
+          status: 'INACTIVE',
+        },
+      });
+      if (ownerUser) {
+        await tx.users.update({
+          where: { id: ownerUser.id },
+          data: {
+            status: 'ACTIVE',
+            updated_by: BigInt(user.id),
+            updated_at: now,
+          },
+        });
+      }
+    });
+
+    const updated = await this.prisma.library_subscriptions.findUnique({
+      where: { id: subId },
+      include: { libraries: true },
+    });
+
+    return this.mapSubscriptionDecimalOutput(updated!);
   }
 }

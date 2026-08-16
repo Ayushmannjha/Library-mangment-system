@@ -21,6 +21,7 @@ import { CreateLibrarySubscriptionDto } from './dto/create-library-subscription.
 import { UpdateSubscriptionPlanDto } from './dto/update-subscription-plan.dto';
 import { ChangeLibraryPlanDto } from './dto/change-library-plan.dto';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
+import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.interface';
 
@@ -29,6 +30,20 @@ import type { AuthenticatedUser } from '../auth/interfaces/authenticated-user.in
 @Controller('subscriptions')
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
+
+  // --- Public (no auth) ---
+  @Public()
+  @Get('plans/public')
+  @ApiOperation({
+    summary: 'List active plans for registration (public, no auth)',
+  })
+  async findPublicPlans() {
+    const plans = await this.subscriptionsService.findAllPlans(1, 100, 'ACTIVE');
+    return {
+      message: 'Plans retrieved successfully',
+      data: plans.data,
+    };
+  }
 
   // --- Global Plans ---
   @Post('plans')
@@ -183,6 +198,27 @@ export class SubscriptionsController {
     return {
       message: 'Library subscription plan updated successfully',
       data: await this.subscriptionsService.changeLibraryPlan(id, dto, user),
+    };
+  }
+
+  @Post('libraries/:id/confirm')
+  @RequirePermission('SAAS_SUBSCRIPTION_MANAGE')
+  @ApiOperation({
+    summary:
+      'Admin: confirm payment and activate a PENDING library subscription',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Numeric subscription id',
+    example: 1,
+  })
+  async confirmSubscription(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return {
+      message: 'Subscription confirmed and library activated successfully',
+      data: await this.subscriptionsService.confirmSubscription(id, user),
     };
   }
 }
