@@ -2,6 +2,5 @@
 // Development environment configuration
 export const environment = {
   production: false,
-  // Base URL for the NestJS backend API in local development
-  apiUrl: 'http://localhost:3000/api/v1' 
+  apiUrl: 'https://lms-api.antss.in/api/v1' 
 };
