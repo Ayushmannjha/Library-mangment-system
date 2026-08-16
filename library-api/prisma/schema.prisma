@@ -1,0 +1,501 @@
+// Prisma 7 schema — introspected from the LIVE PostgreSQL database
+// (`lms`) via `prisma db pull`, so it exactly matches the real tables.
+// After FUTURE schema edits (adding columns), run `npx prisma db push` to
+// apply them, then `npx prisma generate` to refresh the typed client.
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  // partialIndexes is auto-enabled because the DB uses partial unique
+  // constraints (WHERE ... IS NOT NULL) that Prisma must represent.
+  previewFeatures = ["partialIndexes"]
+  moduleFormat    = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Libraries are the SaaS tenants. There is NO deleted_at column in the DB;
+// lifecycle is handled through `status` (ACTIVE / INACTIVE — enforced by
+// ck_libraries_status check). "Deleting" a library sets status = INACTIVE.
+model libraries {
+  id                                BigInt                 @id(map: "pk_libraries") @default(autoincrement())
+  name                              String                 @db.VarChar(150)
+  code                              String                 @unique(map: "uq_libraries_code") @db.VarChar(50)
+  email                             String?                @db.VarChar(150)
+  phone                             String?                @db.VarChar(20)
+  address                           String?
+  city                              String?                @db.VarChar(100)
+  status                            String                 @default("ACTIVE") @db.VarChar(20)
+  created_by                        BigInt?
+  created_at                        DateTime               @default(now()) @db.Timestamptz(6)
+  updated_by                        BigInt?
+  updated_at                        DateTime               @default(now()) @db.Timestamptz(6)
+  attendance                        attendance[]
+  fee_plans                         fee_plans[]
+  invoices                          invoices[]
+  users_libraries_created_byTousers users?                 @relation("libraries_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_libraries_created_by")
+  users_libraries_updated_byTousers users?                 @relation("libraries_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_libraries_updated_by")
+  library_subscriptions             library_subscriptions?
+  payments                          payments[]
+  roles                             roles[]
+  seat_bookings                     seat_bookings[]
+  seats                             seats[]
+  students                          students[]
+  time_slots                        time_slots[]
+  users_users_library_idTolibraries users[]                @relation("users_library_idTolibraries")
+
+  @@index([name], map: "ix_libraries_name")
+  @@index([status], map: "ix_libraries_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model attendance {
+  id                                 BigInt         @id(map: "pk_attendance") @default(autoincrement())
+  library_id                         BigInt
+  student_id                         BigInt
+  booking_id                         BigInt?
+  attendance_date                    DateTime       @db.Date
+  check_in_at                        DateTime       @db.Timestamptz(6)
+  check_out_at                       DateTime?      @db.Timestamptz(6)
+  attendance_status                  String         @default("PRESENT") @db.VarChar(20)
+  check_in_method                    String         @default("QR") @db.VarChar(20)
+  qr_token                           String?        @unique(map: "ux_attendance_qr_token", where: raw("(qr_token IS NOT NULL)")) @db.VarChar(255)
+  remarks                            String?
+  created_at                         DateTime       @default(now()) @db.Timestamptz(6)
+  created_by                         BigInt?
+  updated_at                         DateTime       @default(now()) @db.Timestamptz(6)
+  updated_by                         BigInt?
+  seat_bookings                      seat_bookings? @relation(fields: [booking_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_attendance_booking")
+  users_attendance_created_byTousers users?         @relation("attendance_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_attendance_created_by")
+  libraries                          libraries      @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_attendance_library")
+  students                           students       @relation(fields: [student_id], references: [id], onUpdate: NoAction, map: "fk_attendance_student")
+  users_attendance_updated_byTousers users?         @relation("attendance_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_attendance_updated_by")
+
+  @@index([booking_id], map: "ix_attendance_booking_id")
+  @@index([attendance_date], map: "ix_attendance_date")
+  @@index([library_id, attendance_date], map: "ix_attendance_library_date")
+  @@index([library_id], map: "ix_attendance_library_id")
+  @@index([qr_token], map: "ix_attendance_qr_token")
+  @@index([attendance_status], map: "ix_attendance_status")
+  @@index([student_id], map: "ix_attendance_student_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model fee_plans {
+  id                                BigInt      @id(map: "pk_fee_plans") @default(autoincrement())
+  library_id                        BigInt
+  name                              String      @db.VarChar(150)
+  code                              String      @db.VarChar(50)
+  description                       String?
+  amount                            Decimal     @db.Decimal(12, 2)
+  currency                          String      @default("INR") @db.Char(3)
+  billing_cycle                     String      @default("MONTHLY") @db.VarChar(20)
+  duration_days                     Int?
+  time_slot_id                      BigInt?
+  status                            String      @default("ACTIVE") @db.VarChar(20)
+  created_at                        DateTime    @default(now()) @db.Timestamptz(6)
+  created_by                        BigInt?
+  updated_at                        DateTime    @default(now()) @db.Timestamptz(6)
+  updated_by                        BigInt?
+  users_fee_plans_created_byTousers users?      @relation("fee_plans_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_fee_plans_created_by")
+  libraries                         libraries   @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_fee_plans_library")
+  time_slots                        time_slots? @relation(fields: [time_slot_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_fee_plans_time_slot")
+  users_fee_plans_updated_byTousers users?      @relation("fee_plans_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_fee_plans_updated_by")
+  invoices                          invoices[]
+
+  @@unique([library_id, code], map: "uq_fee_plans_library_code")
+  @@index([library_id], map: "ix_fee_plans_library_id")
+  @@index([library_id, name], map: "ix_fee_plans_name")
+  @@index([status], map: "ix_fee_plans_status")
+  @@index([time_slot_id], map: "ix_fee_plans_time_slot_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model invoices {
+  id                               BigInt     @id(map: "pk_invoices") @default(autoincrement())
+  library_id                       BigInt
+  student_id                       BigInt
+  fee_plan_id                      BigInt?
+  invoice_number                   String     @db.VarChar(50)
+  invoice_date                     DateTime   @default(dbgenerated("CURRENT_DATE")) @db.Date
+  due_date                         DateTime?  @db.Date
+  description                      String?
+  subtotal                         Decimal    @default(0.00) @db.Decimal(12, 2)
+  discount_amount                  Decimal    @default(0.00) @db.Decimal(12, 2)
+  tax_amount                       Decimal    @default(0.00) @db.Decimal(12, 2)
+  total_amount                     Decimal    @default(0.00) @db.Decimal(12, 2)
+  currency                         String     @default("INR") @db.Char(3)
+  status                           String     @default("PENDING") @db.VarChar(20)
+  created_at                       DateTime   @default(now()) @db.Timestamptz(6)
+  created_by                       BigInt?
+  updated_at                       DateTime   @default(now()) @db.Timestamptz(6)
+  updated_by                       BigInt?
+  users_invoices_created_byTousers users?     @relation("invoices_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_invoices_created_by")
+  fee_plans                        fee_plans? @relation(fields: [fee_plan_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_invoices_fee_plan")
+  libraries                        libraries  @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_invoices_library")
+  students                         students   @relation(fields: [student_id], references: [id], onUpdate: NoAction, map: "fk_invoices_student")
+  users_invoices_updated_byTousers users?     @relation("invoices_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_invoices_updated_by")
+  payments                         payments[]
+
+  @@unique([library_id, invoice_number], map: "uq_invoices_library_invoice_number")
+  @@index([due_date], map: "ix_invoices_due_date")
+  @@index([fee_plan_id], map: "ix_invoices_fee_plan_id")
+  @@index([invoice_date], map: "ix_invoices_invoice_date")
+  @@index([library_id], map: "ix_invoices_library_id")
+  @@index([library_id, status], map: "ix_invoices_library_status")
+  @@index([status], map: "ix_invoices_status")
+  @@index([student_id], map: "ix_invoices_student_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model library_subscriptions {
+  id                                            BigInt             @id(map: "pk_library_subscriptions") @default(autoincrement())
+  library_id                                    BigInt             @unique(map: "ux_library_active_subscription", where: raw("((status)::text = ANY ((ARRAY['TRIALING'::character varying, 'ACTIVE'::character varying])::text[]))"))
+  plan_id                                       BigInt
+  status                                        String             @default("TRIALING") @db.VarChar(20)
+  trial_start_at                                DateTime?          @db.Timestamptz(6)
+  trial_end_at                                  DateTime?          @db.Timestamptz(6)
+  start_at                                      DateTime?          @db.Timestamptz(6)
+  end_at                                        DateTime?          @db.Timestamptz(6)
+  cancelled_at                                  DateTime?          @db.Timestamptz(6)
+  price                                         Decimal            @default(0.00) @db.Decimal(12, 2)
+  currency                                      String             @default("INR") @db.Char(3)
+  created_by                                    BigInt?
+  created_at                                    DateTime           @default(now()) @db.Timestamptz(6)
+  updated_by                                    BigInt?
+  updated_at                                    DateTime           @default(now()) @db.Timestamptz(6)
+  users_library_subscriptions_created_byTousers users?             @relation("library_subscriptions_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_library_subscriptions_created_by")
+  libraries                                     libraries          @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_library_subscriptions_library")
+  subscription_plans                            subscription_plans @relation(fields: [plan_id], references: [id], onUpdate: NoAction, map: "fk_library_subscriptions_plan")
+  users_library_subscriptions_updated_byTousers users?             @relation("library_subscriptions_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_library_subscriptions_updated_by")
+
+  @@index([end_at], map: "ix_library_subscriptions_end_at")
+  @@index([library_id], map: "ix_library_subscriptions_library_id")
+  @@index([plan_id], map: "ix_library_subscriptions_plan_id")
+  @@index([status], map: "ix_library_subscriptions_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model payments {
+  id                               BigInt    @id(map: "pk_payments") @default(autoincrement())
+  library_id                       BigInt
+  invoice_id                       BigInt
+  student_id                       BigInt
+  payment_number                   String    @db.VarChar(50)
+  amount                           Decimal   @db.Decimal(12, 2)
+  currency                         String    @default("INR") @db.Char(3)
+  payment_method                   String    @db.VarChar(20)
+  transaction_reference            String?   @db.VarChar(150)
+  payment_date                     DateTime  @default(now()) @db.Timestamptz(6)
+  status                           String    @default("SUCCESS") @db.VarChar(20)
+  notes                            String?
+  created_at                       DateTime  @default(now()) @db.Timestamptz(6)
+  created_by                       BigInt?
+  updated_at                       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_by                       BigInt?
+  users_payments_created_byTousers users?    @relation("payments_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_payments_created_by")
+  invoices                         invoices  @relation(fields: [invoice_id], references: [id], onUpdate: NoAction, map: "fk_payments_invoice")
+  libraries                        libraries @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_payments_library")
+  students                         students  @relation(fields: [student_id], references: [id], onUpdate: NoAction, map: "fk_payments_student")
+  users_payments_updated_byTousers users?    @relation("payments_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_payments_updated_by")
+
+  @@unique([library_id, payment_number], map: "uq_payments_library_payment_number")
+  @@unique([library_id, transaction_reference], map: "ux_payments_library_transaction_reference", where: raw("(transaction_reference IS NOT NULL)"))
+  @@index([invoice_id], map: "ix_payments_invoice_id")
+  @@index([library_id, payment_date], map: "ix_payments_library_date")
+  @@index([library_id], map: "ix_payments_library_id")
+  @@index([payment_date], map: "ix_payments_payment_date")
+  @@index([status], map: "ix_payments_status")
+  @@index([student_id], map: "ix_payments_student_id")
+  @@index([transaction_reference], map: "ix_payments_transaction_reference")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model permissions {
+  id               BigInt             @id(map: "pk_permissions") @default(autoincrement())
+  code             String             @unique(map: "uq_permissions_code") @db.VarChar(100)
+  name             String             @db.VarChar(150)
+  module           String             @db.VarChar(50)
+  description      String?
+  status           String             @default("ACTIVE") @db.VarChar(20)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       BigInt?
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_by       BigInt?
+  role_permissions role_permissions[]
+
+  @@index([module], map: "ix_permissions_module")
+  @@index([status], map: "ix_permissions_status")
+}
+
+model role_permissions {
+  role_id       BigInt
+  permission_id BigInt
+  assigned_at   DateTime    @default(now()) @db.Timestamptz(6)
+  assigned_by   BigInt?
+  users         users?      @relation(fields: [assigned_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_role_permissions_assigned_by")
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_role_permissions_permission")
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_role_permissions_role")
+
+  @@id([role_id, permission_id], map: "pk_role_permissions")
+  @@index([permission_id], map: "ix_role_permissions_permission_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model roles {
+  id               BigInt             @id(map: "pk_roles") @default(autoincrement())
+  library_id       BigInt?
+  code             String             @db.VarChar(50)
+  name             String             @db.VarChar(100)
+  description      String?
+  is_system_role   Boolean            @default(false)
+  status           String             @default("ACTIVE") @db.VarChar(20)
+  created_at       DateTime           @default(now()) @db.Timestamptz(6)
+  created_by       BigInt?
+  updated_at       DateTime           @default(now()) @db.Timestamptz(6)
+  updated_by       BigInt?
+  role_permissions role_permissions[]
+  libraries        libraries?         @relation(fields: [library_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_roles_library")
+  user_roles       user_roles[]
+
+  @@index([library_id], map: "ix_roles_library_id")
+  @@index([status], map: "ix_roles_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model seat_bookings {
+  id                                    BigInt       @id(map: "pk_seat_bookings") @default(autoincrement())
+  library_id                            BigInt
+  student_id                            BigInt
+  seat_id                               BigInt
+  time_slot_id                          BigInt
+  booking_date                          DateTime     @db.Date
+  status                                String       @default("BOOKED") @db.VarChar(20)
+  allocated_at                          DateTime     @default(now()) @db.Timestamptz(6)
+  cancelled_at                          DateTime?    @db.Timestamptz(6)
+  notes                                 String?
+  created_at                            DateTime     @default(now()) @db.Timestamptz(6)
+  created_by                            BigInt?
+  updated_at                            DateTime     @default(now()) @db.Timestamptz(6)
+  updated_by                            BigInt?
+  attendance                            attendance[]
+  users_seat_bookings_created_byTousers users?       @relation("seat_bookings_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_seat_bookings_created_by")
+  libraries                             libraries    @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_seat_bookings_library")
+  seats                                 seats        @relation(fields: [seat_id], references: [id], onUpdate: NoAction, map: "fk_seat_bookings_seat")
+  students                              students     @relation(fields: [student_id], references: [id], onUpdate: NoAction, map: "fk_seat_bookings_student")
+  time_slots                            time_slots   @relation(fields: [time_slot_id], references: [id], onUpdate: NoAction, map: "fk_seat_bookings_time_slot")
+  users_seat_bookings_updated_byTousers users?       @relation("seat_bookings_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_seat_bookings_updated_by")
+
+  @@unique([student_id, time_slot_id, booking_date], map: "uq_seat_bookings_student_slot_date")
+  @@index([booking_date], map: "ix_seat_bookings_booking_date")
+  @@index([library_id, booking_date], map: "ix_seat_bookings_library_date")
+  @@index([library_id], map: "ix_seat_bookings_library_id")
+  @@index([seat_id, booking_date, time_slot_id], map: "ix_seat_bookings_seat_date_slot")
+  @@index([seat_id], map: "ix_seat_bookings_seat_id")
+  @@index([status], map: "ix_seat_bookings_status")
+  @@index([student_id], map: "ix_seat_bookings_student_id")
+  @@index([time_slot_id], map: "ix_seat_bookings_time_slot_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model seats {
+  id                            BigInt          @id(map: "pk_seats") @default(autoincrement())
+  library_id                    BigInt
+  seat_number                   String          @db.VarChar(50)
+  name                          String?         @db.VarChar(100)
+  description                   String?
+  floor                         String?         @db.VarChar(50)
+  section                       String?         @db.VarChar(100)
+  status                        String          @default("ACTIVE") @db.VarChar(20)
+  created_at                    DateTime        @default(now()) @db.Timestamptz(6)
+  created_by                    BigInt?
+  updated_at                    DateTime        @default(now()) @db.Timestamptz(6)
+  updated_by                    BigInt?
+  seat_bookings                 seat_bookings[]
+  users_seats_created_byTousers users?          @relation("seats_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_seats_created_by")
+  libraries                     libraries       @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_seats_library")
+  users_seats_updated_byTousers users?          @relation("seats_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_seats_updated_by")
+
+  @@unique([library_id, seat_number], map: "uq_seats_library_seat_number")
+  @@index([library_id], map: "ix_seats_library_id")
+  @@index([library_id, section], map: "ix_seats_section")
+  @@index([status], map: "ix_seats_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model student_documents {
+  id              BigInt   @id(map: "pk_student_documents") @default(autoincrement())
+  student_id      BigInt
+  document_type   String   @db.VarChar(50)
+  document_number String?  @db.VarChar(100)
+  file_name       String   @db.VarChar(255)
+  file_url        String
+  file_size       BigInt?
+  mime_type       String?  @db.VarChar(100)
+  uploaded_at     DateTime @default(now()) @db.Timestamptz(6)
+  uploaded_by     BigInt?
+  status          String   @default("ACTIVE") @db.VarChar(20)
+  students        students @relation(fields: [student_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_student_documents_student")
+  users           users?   @relation(fields: [uploaded_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_student_documents_uploaded_by")
+
+  @@index([document_type], map: "ix_student_documents_document_type")
+  @@index([status], map: "ix_student_documents_status")
+  @@index([student_id], map: "ix_student_documents_student_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model students {
+  id                               BigInt              @id(map: "pk_students") @default(autoincrement())
+  library_id                       BigInt
+  admission_number                 String              @db.VarChar(50)
+  first_name                       String              @db.VarChar(100)
+  last_name                        String?             @db.VarChar(100)
+  gender                           String?             @db.VarChar(20)
+  date_of_birth                    DateTime?           @db.Date
+  email                            String?             @db.VarChar(150)
+  phone                            String              @db.VarChar(20)
+  alternate_phone                  String?             @db.VarChar(20)
+  address                          String?
+  city                             String?             @db.VarChar(100)
+  state                            String?             @db.VarChar(100)
+  pincode                          String?             @db.VarChar(10)
+  profile_photo_url                String?
+  admission_date                   DateTime            @default(dbgenerated("CURRENT_DATE")) @db.Date
+  status                           String              @default("ACTIVE") @db.VarChar(20)
+  notes                            String?
+  created_at                       DateTime            @default(now()) @db.Timestamptz(6)
+  created_by                       BigInt?
+  updated_at                       DateTime            @default(now()) @db.Timestamptz(6)
+  updated_by                       BigInt?
+  attendance                       attendance[]
+  invoices                         invoices[]
+  payments                         payments[]
+  seat_bookings                    seat_bookings[]
+  student_documents                student_documents[]
+  users_students_created_byTousers users?              @relation("students_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_students_created_by")
+  libraries                        libraries           @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_students_library")
+  users_students_updated_byTousers users?              @relation("students_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_students_updated_by")
+  users_users_student_idTostudents users[]             @relation("users_student_idTostudents")
+
+  @@unique([library_id, admission_number], map: "uq_students_library_admission_number")
+  @@index([email], map: "ix_students_email")
+  @@index([library_id], map: "ix_students_library_id")
+  @@index([first_name, last_name], map: "ix_students_name")
+  @@index([phone], map: "ix_students_phone")
+  @@index([library_id, phone], map: "ix_students_phone_library")
+  @@index([status], map: "ix_students_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model subscription_plans {
+  id                                         BigInt                  @id(map: "pk_subscription_plans") @default(autoincrement())
+  code                                       String                  @unique(map: "uq_subscription_plans_code") @db.VarChar(50)
+  name                                       String                  @db.VarChar(100)
+  description                                String?
+  price                                      Decimal                 @default(0.00) @db.Decimal(12, 2)
+  currency                                   String                  @default("INR") @db.Char(3)
+  billing_cycle                              String                  @default("MONTHLY") @db.VarChar(20)
+  status                                     String                  @default("ACTIVE") @db.VarChar(20)
+  created_by                                 BigInt?
+  created_at                                 DateTime                @default(now()) @db.Timestamptz(6)
+  updated_by                                 BigInt?
+  updated_at                                 DateTime                @default(now()) @db.Timestamptz(6)
+  library_subscriptions                      library_subscriptions[]
+  users_subscription_plans_created_byTousers users?                  @relation("subscription_plans_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_subscription_plans_created_by")
+  users_subscription_plans_updated_byTousers users?                  @relation("subscription_plans_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_subscription_plans_updated_by")
+
+  @@index([name], map: "ix_subscription_plans_name")
+  @@index([status], map: "ix_subscription_plans_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model time_slots {
+  id                                 BigInt          @id(map: "pk_time_slots") @default(autoincrement())
+  library_id                         BigInt
+  name                               String          @db.VarChar(100)
+  start_time                         DateTime        @db.Time(6)
+  end_time                           DateTime        @db.Time(6)
+  status                             String          @default("ACTIVE") @db.VarChar(20)
+  description                        String?
+  created_at                         DateTime        @default(now()) @db.Timestamptz(6)
+  created_by                         BigInt?
+  updated_at                         DateTime        @default(now()) @db.Timestamptz(6)
+  updated_by                         BigInt?
+  fee_plans                          fee_plans[]
+  seat_bookings                      seat_bookings[]
+  users_time_slots_created_byTousers users?          @relation("time_slots_created_byTousers", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_time_slots_created_by")
+  libraries                          libraries       @relation(fields: [library_id], references: [id], onUpdate: NoAction, map: "fk_time_slots_library")
+  users_time_slots_updated_byTousers users?          @relation("time_slots_updated_byTousers", fields: [updated_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_time_slots_updated_by")
+
+  @@unique([library_id, name], map: "uq_time_slots_library_name")
+  @@index([library_id], map: "ix_time_slots_library_id")
+  @@index([library_id, start_time], map: "ix_time_slots_start_time")
+  @@index([status], map: "ix_time_slots_status")
+}
+
+model user_roles {
+  user_id                             BigInt
+  role_id                             BigInt
+  assigned_at                         DateTime @default(now()) @db.Timestamptz(6)
+  assigned_by                         BigInt?
+  users_user_roles_assigned_byTousers users?   @relation("user_roles_assigned_byTousers", fields: [assigned_by], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_user_roles_assigned_by")
+  roles                               roles    @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_roles_role")
+  users_user_roles_user_idTousers     users    @relation("user_roles_user_idTousers", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_user_roles_user")
+
+  @@id([user_id, role_id], map: "pk_user_roles")
+  @@index([role_id], map: "ix_user_roles_role_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+model users {
+  id                                                            BigInt                  @id(map: "pk_users") @default(autoincrement())
+  library_id                                                    BigInt?
+  student_id                                                    BigInt?                 @unique(map: "uq_users_student")
+  first_name                                                    String                  @db.VarChar(100)
+  last_name                                                     String?                 @db.VarChar(100)
+  email                                                         String?                 @db.VarChar(150)
+  phone                                                         String?                 @db.VarChar(20)
+  password_hash                                                 String
+  status                                                        String                  @default("ACTIVE") @db.VarChar(20)
+  last_login_at                                                 DateTime?               @db.Timestamptz(6)
+  created_at                                                    DateTime                @default(now()) @db.Timestamptz(6)
+  created_by                                                    BigInt?
+  updated_at                                                    DateTime                @default(now()) @db.Timestamptz(6)
+  updated_by                                                    BigInt?
+  attendance_attendance_created_byTousers                       attendance[]            @relation("attendance_created_byTousers")
+  attendance_attendance_updated_byTousers                       attendance[]            @relation("attendance_updated_byTousers")
+  fee_plans_fee_plans_created_byTousers                         fee_plans[]             @relation("fee_plans_created_byTousers")
+  fee_plans_fee_plans_updated_byTousers                         fee_plans[]             @relation("fee_plans_updated_byTousers")
+  invoices_invoices_created_byTousers                           invoices[]              @relation("invoices_created_byTousers")
+  invoices_invoices_updated_byTousers                           invoices[]              @relation("invoices_updated_byTousers")
+  libraries_libraries_created_byTousers                         libraries[]             @relation("libraries_created_byTousers")
+  libraries_libraries_updated_byTousers                         libraries[]             @relation("libraries_updated_byTousers")
+  library_subscriptions_library_subscriptions_created_byTousers library_subscriptions[] @relation("library_subscriptions_created_byTousers")
+  library_subscriptions_library_subscriptions_updated_byTousers library_subscriptions[] @relation("library_subscriptions_updated_byTousers")
+  payments_payments_created_byTousers                           payments[]              @relation("payments_created_byTousers")
+  payments_payments_updated_byTousers                           payments[]              @relation("payments_updated_byTousers")
+  role_permissions                                              role_permissions[]
+  seat_bookings_seat_bookings_created_byTousers                 seat_bookings[]         @relation("seat_bookings_created_byTousers")
+  seat_bookings_seat_bookings_updated_byTousers                 seat_bookings[]         @relation("seat_bookings_updated_byTousers")
+  seats_seats_created_byTousers                                 seats[]                 @relation("seats_created_byTousers")
+  seats_seats_updated_byTousers                                 seats[]                 @relation("seats_updated_byTousers")
+  student_documents                                             student_documents[]
+  students_students_created_byTousers                           students[]              @relation("students_created_byTousers")
+  students_students_updated_byTousers                           students[]              @relation("students_updated_byTousers")
+  students_users_student_idTostudents                           students?               @relation("users_student_idTostudents", fields: [student_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_users_student")
+  subscription_plans_subscription_plans_created_byTousers       subscription_plans[]    @relation("subscription_plans_created_byTousers")
+  subscription_plans_subscription_plans_updated_byTousers       subscription_plans[]    @relation("subscription_plans_updated_byTousers")
+  time_slots_time_slots_created_byTousers                       time_slots[]            @relation("time_slots_created_byTousers")
+  time_slots_time_slots_updated_byTousers                       time_slots[]            @relation("time_slots_updated_byTousers")
+  user_roles_user_roles_assigned_byTousers                      user_roles[]            @relation("user_roles_assigned_byTousers")
+  user_roles_user_roles_user_idTousers                          user_roles[]            @relation("user_roles_user_idTousers")
+  libraries_users_library_idTolibraries                         libraries?              @relation("users_library_idTolibraries", fields: [library_id], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "fk_users_library")
+
+  @@index([email], map: "ix_users_email")
+  @@index([library_id], map: "ix_users_library_id")
+  @@index([phone], map: "ix_users_phone")
+  @@index([status], map: "ix_users_status")
+}

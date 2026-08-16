@@ -1,0 +1,154 @@
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm">
+          <div class="relative flex items-center w-full h-8.5 rounded-lg border app-input overflow-hidden transition-all">
+              <div class="grid place-items-center h-full w-9 opacity-60">
+                  <span class="material-symbols-outlined text-sm">search</span>
+              </div>
+              <input autocomplete="off" class="peer h-full w-full outline-none text-xs bg-transparent pr-2 placeholder:opacity-50" placeholder="Search students, bookings..." type="text"/>
+          </div>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Light / Dark Theme Switcher Button -->
+          <button (click)="themeService.toggleTheme()" 
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+          <div class="h-4 w-px opacity-20 bg-current mx-1"></div>
+          <div class="flex items-center gap-2 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>{{ currentUser()?.email }}</span>
+          </div>
+      </div>
+  </header>
+
+  <!-- Page Canvas -->
+  <main class="flex-1 p-6 space-y-6 app-canvas">
+      
+      @if (metrics(); as data) {
+          <!-- Rich Compact Header Banner (Dynamic Hero Header) -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+              <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+              <div class="flex items-center gap-3.5 z-10">
+                  <div class="w-10 h-10 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                      <span class="material-symbols-outlined text-xl">dashboard</span>
+                  </div>
+                  <div>
+                      <h2 class="text-lg font-bold tracking-tight app-header-title">Dashboard Overview</h2>
+                      <p class="text-[11px] app-header-subtitle">🗓️ {{ currentDate | date:'fullDate' }}</p>
+                  </div>
+              </div>
+              <div class="flex gap-2 z-10">
+                  <button (click)="dashboardService.loadDashboardMetrics().subscribe()" class="app-header-btn text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs hover:opacity-90 transition-all">
+                      <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+                  </button>
+              </div>
+          </div>
+
+          <!-- Dynamic Bento Metric Cards Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              
+              <!-- Total Students Card -->
+              <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Total Students</span>
+                      <div class="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-500 border border-indigo-500/20 flex items-center justify-center font-bold shrink-0">
+                          <span class="material-symbols-outlined text-lg">group</span>
+                      </div>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                      <span class="text-3xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ data.total_students }}</span>
+                      <span class="text-xs opacity-70">Enrolled Profiles</span>
+                  </div>
+              </div>
+
+              <!-- Total Seats Card -->
+              <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Total Seats</span>
+                      <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/20 flex items-center justify-center font-bold shrink-0">
+                          <span class="material-symbols-outlined text-lg">chair</span>
+                      </div>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                      <span class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{{ data.total_seats }}</span>
+                      <span class="text-xs opacity-70">Total Inventory</span>
+                  </div>
+              </div>
+
+              <!-- Occupied Seats Card & Live Progress Bar -->
+              <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Occupied Seats</span>
+                      <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                          <span class="material-symbols-outlined text-lg">person_check</span>
+                      </div>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                      <span class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{{ data.active_bookings }}</span>
+                      <span class="text-xs opacity-70">/ {{ data.total_seats }} (<span class="text-amber-500 font-semibold">{{ data.occupancy_rate }}%</span>)</span>
+                  </div>
+                  <div class="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full mt-3 overflow-hidden border border-slate-300 dark:border-slate-700/50">
+                      <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 h-full rounded-full transition-all duration-500 shadow-xs" [style.width.%]="data.occupancy_rate"></div>
+                  </div>
+              </div>
+
+              <!-- Today's Attendance -->
+              <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Today's Check-ins</span>
+                      <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 flex items-center justify-center font-bold shrink-0">
+                          <span class="material-symbols-outlined text-lg">fact_check</span>
+                      </div>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                      <span class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ data.today_check_ins }}</span>
+                      <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Live Active Today</span>
+                  </div>
+              </div>
+
+              <!-- Monthly Revenue -->
+              <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Monthly Revenue</span>
+                      <div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-500 border border-indigo-500/30 flex items-center justify-center font-bold shrink-0">
+                          <span class="material-symbols-outlined text-lg">payments</span>
+                      </div>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                      <span class="text-3xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ data.revenue_this_month | currency:'INR':'symbol':'1.0-2' }}</span>
+                  </div>
+              </div>
+
+              <!-- Outstanding Dues -->
+              <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+                  <div class="flex items-center justify-between mb-3">
+                      <span class="text-xs font-bold uppercase tracking-wider text-rose-500">Outstanding Dues</span>
+                      <div class="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/20 flex items-center justify-center font-bold shrink-0">
+                          <span class="material-symbols-outlined text-lg">pending_actions</span>
+                      </div>
+                  </div>
+                  <div class="flex items-baseline gap-2">
+                      <span class="text-3xl font-extrabold text-rose-600 dark:text-rose-400">{{ data.outstanding_dues | currency:'INR':'symbol':'1.0-2' }}</span>
+                  </div>
+              </div>
+          </div>
+      }
+
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[50vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+  </main>
+</div>

@@ -1,0 +1,220 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-md">
+          <div class="relative flex items-center w-full h-9 rounded-lg border app-input overflow-hidden transition-all">
+              <div class="grid place-items-center h-full w-9 opacity-60">
+                  <span class="material-symbols-outlined text-sm">search</span>
+              </div>
+              <input (input)="onSearchChange($event)" [value]="searchQuery()" class="peer h-full w-full outline-none text-xs bg-transparent pr-2 placeholder:opacity-50" placeholder="Search fee plans by name or code..." type="text"/>
+          </div>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Light / Dark Theme Switcher Button -->
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+      <!-- Hero Header Banner (Dynamic Theme) -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">loyalty</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">Fee Plans</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Create and manage subscription fee structures for seat bookings.</p>
+              </div>
+          </div>
+          <div class="z-10">
+              <button (click)="openCreateModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  Add Fee Plan
+              </button>
+          </div>
+      </div>
+
+      <!-- Filters & Search Bar -->
+      <div class="app-card rounded-xl p-4 flex flex-wrap gap-4 items-center">
+          <div class="flex-1 min-w-[200px]">
+              <div class="relative">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm opacity-60 pointer-events-none">search</span>
+                  <input (input)="onSearchChange($event)" [value]="searchQuery()" class="w-full pl-9 pr-4 py-2 rounded-lg app-input text-xs" placeholder="Search fee plans..." type="text"/>
+              </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+              <select (change)="selectedCycle.set($any($event.target).value)" class="px-3 py-2 rounded-lg app-input text-xs cursor-pointer">
+                  <option value="">Cycle: All</option>
+                  <option value="MONTHLY">Monthly</option>
+                  <option value="QUARTERLY">Quarterly</option>
+                  <option value="HALF_YEARLY">Half Yearly</option>
+                  <option value="YEARLY">Yearly</option>
+              </select>
+          </div>
+
+          <button (click)="feePlansService.loadFeePlans().subscribe()" class="p-2 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors shadow-xs ml-auto" title="Refresh">
+              <span class="material-symbols-outlined text-sm">refresh</span>
+          </button>
+      </div>
+
+      <!-- Pricing Tier Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          @for (p of filteredPlans(); track p.id) {
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-all relative overflow-hidden">
+                  <div>
+                      <div class="flex justify-between items-start mb-3">
+                          <div>
+                              <span class="font-mono text-[10px] uppercase font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{{ p.code }}</span>
+                              <h3 class="text-base font-bold mt-1.5">{{ p.name }}</h3>
+                              <p class="text-xs opacity-60 mt-0.5">{{ p.description || 'Standard Pricing Plan' }}</p>
+                          </div>
+                          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] shrink-0 transition-all"
+                                [class.app-badge-active]="p.status === 'ACTIVE'"
+                                [class.app-badge-inactive]="p.status === 'INACTIVE'">
+                              <span class="w-1.5 h-1.5 rounded-full"
+                                    [class.bg-emerald-500]="p.status === 'ACTIVE'"
+                                    [class.bg-rose-500]="p.status === 'INACTIVE'"></span>
+                              {{ p.status }}
+                          </span>
+                      </div>
+
+                      <!-- Amount & Cycle Display -->
+                      <div class="app-input rounded-xl p-3 my-3 flex items-baseline justify-between">
+                          <div>
+                              <span class="text-xl font-bold font-mono text-amber-600 dark:text-amber-400">
+                                  {{ p.amount | currency:p.currency:'symbol':'1.0-2' }}
+                              </span>
+                              <span class="text-xs opacity-60 font-medium"> / {{ p.billing_cycle | lowercase }}</span>
+                          </div>
+                          <span class="text-xs font-semibold opacity-70">{{ p.duration_days }} days</span>
+                      </div>
+                  </div>
+
+                  <!-- Card Actions -->
+                  <div class="pt-3 border-t flex justify-end gap-1.5">
+                      <button (click)="openEditModal(p)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors" title="Edit Plan">
+                          <span class="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      @if (p.status === 'ACTIVE') {
+                          <button (click)="deletePlan(p)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors hover:text-rose-500" title="Deactivate Plan">
+                              <span class="material-symbols-outlined text-[18px]">delete</span>
+                          </button>
+                      }
+                  </div>
+              </div>
+          } @empty {
+              <div class="col-span-full py-12 text-center opacity-60 text-sm">
+                  @if (isLoading()) {
+                      <div class="flex items-center justify-center gap-2">
+                          <span class="material-symbols-outlined animate-spin text-amber-500">progress_activity</span>
+                          Loading fee plans...
+                      </div>
+                  } @else {
+                      No fee plans configured. Click "Add Fee Plan" to create one.
+                  }
+              </div>
+          }
+      </div>
+  </main>
+</div>
+
+<!-- Modal Dialog for Creating / Editing Fee Plan -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <!-- Modal Header -->
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <h3 class="text-sm font-bold">{{ editingPlan() ? 'Edit Fee Plan' : 'Add New Fee Plan' }}</h3>
+              <button (click)="closeModal()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+          <!-- Form Body -->
+          <form [formGroup]="planForm" (ngSubmit)="submitForm()" class="p-5 space-y-4 app-canvas">
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Plan Name *</label>
+                  <input formControlName="name" type="text" placeholder="Monthly Standard Plan" class="w-full px-3 py-2 rounded-lg app-input text-xs">
+                  @if (planForm.get('name')?.touched && planForm.get('name')?.invalid) {
+                      <p class="text-[10px] text-rose-500 mt-1">Plan name is required</p>
+                  }
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Plan Code *</label>
+                      <input formControlName="code" type="text" placeholder="PLAN-101" class="w-full px-3 py-2 rounded-lg app-input text-xs uppercase">
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Currency</label>
+                      <select formControlName="currency" class="w-full px-3 py-2 rounded-lg app-input text-xs cursor-pointer">
+                          <option value="INR">INR (₹)</option>
+                          <option value="USD">USD ($)</option>
+                      </select>
+                  </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Amount *</label>
+                      <input formControlName="amount" type="number" min="0" placeholder="1000" class="w-full px-3 py-2 rounded-lg app-input text-xs font-mono">
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Duration (Days) *</label>
+                      <input formControlName="duration_days" type="number" min="1" placeholder="30" class="w-full px-3 py-2 rounded-lg app-input text-xs">
+                  </div>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Billing Cycle</label>
+                  <select formControlName="billing_cycle" class="w-full px-3 py-2 rounded-lg app-input text-xs cursor-pointer">
+                      <option value="MONTHLY">Monthly</option>
+                      <option value="QUARTERLY">Quarterly</option>
+                      <option value="HALF_YEARLY">Half Yearly</option>
+                      <option value="YEARLY">Yearly</option>
+                  </select>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Link to Time Slot (Optional)</label>
+                  <select formControlName="time_slot_id" class="w-full px-3 py-2 rounded-lg app-input text-xs cursor-pointer">
+                      <option value="">-- All Slots / Any Shift --</option>
+                      @for (sl of slots(); track sl.id) {
+                          <option [value]="sl.id">{{ sl.name }}</option>
+                      }
+                  </select>
+              </div>
+
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Description</label>
+                  <input formControlName="description" type="text" placeholder="Optional plan benefits or notes" class="w-full px-3 py-2 rounded-lg app-input text-xs">
+              </div>
+
+              <div class="pt-3 border-t flex justify-end gap-3">
+                  <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg app-input text-xs font-semibold hover:opacity-80 transition-colors">Cancel</button>
+                  <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+                      @if (isLoading()) {
+                          <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      }
+                      {{ editingPlan() ? 'Update Plan' : 'Create Plan' }}
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+}

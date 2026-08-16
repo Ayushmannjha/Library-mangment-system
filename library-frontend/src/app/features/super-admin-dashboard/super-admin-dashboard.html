@@ -1,0 +1,161 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Area -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm">
+          <span class="text-sm font-bold opacity-80">SaaS Platform Overview</span>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Theme Toggle Button -->
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+      @if (metrics(); as data) {
+          
+          <!-- Hero Header Banner (Dynamic Theme) -->
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+              <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+              <div class="flex items-center gap-3.5 z-10">
+                  <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                      <span class="material-symbols-outlined text-2xl">admin_panel_settings</span>
+                  </div>
+                  <div>
+                      <h2 class="text-xl font-bold tracking-tight app-header-title">Platform Administration Overview</h2>
+                      <p class="text-xs mt-0.5 app-header-subtitle">Global tenancy analytics, MRR tracking, platform health metrics, and plan configurations.</p>
+                  </div>
+              </div>
+              <div class="flex flex-wrap gap-2 z-10">
+                  <a routerLink="/super-admin/libraries" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all border-t border-white/20">
+                      <span class="material-symbols-outlined text-base">add</span>
+                      Manage Libraries
+                  </a>
+                  <a routerLink="/subscriptions" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all border-t border-white/20">
+                      <span class="material-symbols-outlined text-base">account_tree</span>
+                      Manage SaaS Plans
+                  </a>
+              </div>
+          </div>
+
+          <!-- Stats Bento Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              <!-- Total Libraries -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-all">
+                  <div class="flex justify-between items-center">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Total Libraries</span>
+                      <div class="p-1.5 rounded-lg bg-amber-500/15 text-amber-500">
+                          <span class="material-symbols-outlined text-lg">library_books</span>
+                      </div>
+                  </div>
+                  <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400">{{ data.kpis.totalLibraries }}</div>
+              </div>
+
+              <!-- Subscription Revenue -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-all">
+                  <div class="flex justify-between items-center">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Subscription Rev</span>
+                      <div class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-500">
+                          <span class="material-symbols-outlined text-lg">payments</span>
+                      </div>
+                  </div>
+                  <div class="text-xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">{{ data.kpis.subscriptionRevenue | currency:'INR':'symbol':'1.0-2' }}</div>
+              </div>
+
+              <!-- Paid Subs -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px] hover:shadow-md transition-all">
+                  <div class="flex justify-between items-center">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Paid Subs</span>
+                      <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-500">
+                          <span class="material-symbols-outlined text-lg">workspace_premium</span>
+                      </div>
+                  </div>
+                  <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ data.kpis.paidLibraries }}</div>
+              </div>
+
+              <!-- Status Breakdown Widget (Micro Grid) -->
+              <div class="app-card rounded-xl p-3 grid grid-cols-2 gap-2 hover:shadow-md transition-all">
+                  <div class="flex flex-col justify-center app-input rounded-lg p-2 text-center">
+                      <span class="text-base font-extrabold leading-none mb-0.5">{{ data.kpis.activeLibraries }}</span>
+                      <span class="text-[9px] opacity-60 uppercase">Active</span>
+                  </div>
+                  <div class="flex flex-col justify-center app-input rounded-lg p-2 text-center">
+                      <span class="text-base font-extrabold leading-none mb-0.5">{{ data.kpis.trialLibraries }}</span>
+                      <span class="text-[9px] opacity-60 uppercase">Trials</span>
+                  </div>
+                  <div class="flex flex-col justify-center app-input rounded-lg p-2 text-center">
+                      <span class="text-base font-extrabold leading-none mb-0.5 text-rose-500">{{ data.kpis.inactiveLibraries }}</span>
+                      <span class="text-[9px] opacity-65 text-rose-500 uppercase">Inactive</span>
+                  </div>
+                  <div class="flex flex-col justify-center app-input rounded-lg p-2 text-center relative overflow-hidden">
+                      <span class="text-base font-extrabold leading-none mb-0.5 text-amber-500">0</span>
+                      <span class="text-[9px] text-amber-500 uppercase">New (Wk)</span>
+                      <div class="absolute bottom-0 left-0 w-full h-[2.5px] bg-amber-500"></div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Charts & Tables Section -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <!-- Recent Registered Libraries Table -->
+              <div class="app-card rounded-xl shadow-xs overflow-hidden flex flex-col">
+                  <div class="px-4 py-3.5 border-b flex justify-between items-center bg-gray-50/5">
+                      <h3 class="text-xs font-bold uppercase tracking-wider opacity-70">Recent Registered Libraries</h3>
+                      <a routerLink="/super-admin/libraries" class="text-xs font-bold text-amber-600 dark:text-amber-400 hover:opacity-85 transition-opacity">View All</a>
+                  </div>
+                  <div class="overflow-x-auto">
+                      <table class="app-table whitespace-nowrap">
+                          <thead>
+                              <tr>
+                                  <th>Library Name</th>
+                                  <th>Registered Date</th>
+                                  <th class="text-right">Status</th>
+                              </tr>
+                          </thead>
+                          <tbody class="divide-y divide-gray-200/10">
+                              @for (lib of data.recentLibraries; track lib.id) {
+                                  <tr class="hover:bg-amber-500/[0.02] transition-colors">
+                                      <td class="py-3 px-4 font-bold text-xs">{{ lib.name }}</td>
+                                      <td class="py-3 px-4 text-xs opacity-60">{{ lib.created_at | date:'dd MMM yyyy':'UTC' }}</td>
+                                      <td class="py-3 px-4 text-right">
+                                          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] shrink-0 transition-all"
+                                                [class.app-badge-active]="lib.status === 'ACTIVE'"
+                                                [class.app-badge-maintenance]="lib.status === 'PENDING'"
+                                                [class.app-badge-inactive]="lib.status === 'INACTIVE'">
+                                              {{ lib.status }}
+                                          </span>
+                                      </td>
+                                  </tr>
+                              } @empty {
+                                  <tr>
+                                      <td colspan="3" class="py-8 text-center opacity-60 text-sm">No libraries found.</td>
+                                  </tr>
+                              }
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
+
+      }
+
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[40vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+  </main>
+</div>

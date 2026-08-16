@@ -1,0 +1,182 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex items-center gap-2">
+          <span class="text-sm font-bold opacity-80">Platform Subscriptions</span>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Theme Toggle -->
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+          @if (authService.primaryRole() === 'SUPER_ADMIN') {
+              <button (click)="openPlanModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  Create Platform Plan
+              </button>
+          }
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+
+      <!-- Hero Header Banner (Dynamic Theme) -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">workspace_premium</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">SaaS Subscriptions</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Manage your library platform plan, view available tiers, and activate subscriptions.</p>
+              </div>
+          </div>
+      </div>
+
+      <!-- Active Subscription Status Card -->
+      @if (mySub(); as sub) {
+          <div class="app-card rounded-xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-l-4 border-l-amber-500">
+              <div>
+                  <div class="flex items-center gap-2.5 mb-1">
+                      <span class="material-symbols-outlined text-amber-500 text-xl">verified</span>
+                      <h3 class="text-sm font-bold">Current Subscription</h3>
+                      <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all"
+                            [class.app-badge-maintenance]="sub.status === 'TRIALING'"
+                            [class.app-badge-active]="sub.status === 'ACTIVE'">
+                          {{ sub.status }}
+                      </span>
+                  </div>
+                  <p class="text-xs opacity-60">
+                      @if (sub.status === 'TRIALING') {
+                          Free Trial Active. Trial ends on: <strong class="opacity-100">{{ sub.trial_ends_at | date:'dd MMM yyyy':'UTC' }}</strong>
+                      } @else {
+                          Active Plan. Period: {{ sub.starts_at | date:'dd MMM yyyy':'UTC' }} to {{ sub.ends_at ? (sub.ends_at | date:'dd MMM yyyy':'UTC') : 'Unlimited' }}
+                      }
+                  </p>
+              </div>
+              @if (sub.status === 'TRIALING') {
+                  <button (click)="activateMySub()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all shrink-0">
+                      Activate Plan Now
+                  </button>
+              }
+          </div>
+      }
+
+      <!-- Available SaaS Plans Grid -->
+      <div>
+          <h3 class="text-sm font-bold mb-4">Available SaaS Plans</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              @for (p of plans(); track p.id) {
+                  <div class="app-card rounded-xl p-5 flex flex-col justify-between hover:shadow-md transition-all">
+                      <div>
+                          <!-- Plan Code Badge -->
+                          <span class="font-mono text-[10px] font-bold app-badge-occupied px-2 py-0.5 rounded uppercase">{{ p.code }}</span>
+                          <h4 class="text-sm font-bold mt-2">{{ p.name }}</h4>
+                          <p class="text-[11px] opacity-55 mt-0.5">{{ p.description || 'Enterprise SaaS Plan' }}</p>
+
+                          <!-- Pricing -->
+                          <div class="my-4">
+                              <span class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 font-mono">{{ p.price | currency:p.currency:'symbol':'1.0-2' }}</span>
+                              <span class="text-[11px] opacity-55 font-medium"> / {{ p.billing_cycle | lowercase }}</span>
+                          </div>
+
+                          <!-- Features List -->
+                          <ul class="space-y-2 text-xs border-t pt-3">
+                              <li class="flex items-center gap-2">
+                                  <span class="material-symbols-outlined text-emerald-500 text-[16px]">check_circle</span>
+                                  <span>Up to <strong>{{ p.max_students || 'Unlimited' }}</strong> Students</span>
+                              </li>
+                              <li class="flex items-center gap-2">
+                                  <span class="material-symbols-outlined text-emerald-500 text-[16px]">check_circle</span>
+                                  <span>Up to <strong>{{ p.max_seats || 'Unlimited' }}</strong> Seat Layouts</span>
+                              </li>
+                              <li class="flex items-center gap-2">
+                                  <span class="material-symbols-outlined text-emerald-500 text-[16px]">check_circle</span>
+                                  <span>Up to <strong>{{ p.max_users || 'Unlimited' }}</strong> Staff Users</span>
+                              </li>
+                          </ul>
+                      </div>
+                  </div>
+              } @empty {
+                  <div class="col-span-full py-12 text-center opacity-60 text-sm">
+                      @if (isLoading()) {
+                          <div class="flex items-center justify-center gap-2">
+                              <span class="material-symbols-outlined animate-spin text-amber-500">progress_activity</span>
+                              Loading platform plans...
+                          </div>
+                      } @else {
+                          No platform subscription plans configured yet.
+                      }
+                  </div>
+              }
+          </div>
+      </div>
+  </main>
+</div>
+
+<!-- ── Create SaaS Plan Modal (Super Admin) ── -->
+@if (showPlanModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <!-- Header -->
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <h3 class="text-sm font-bold">Create SaaS Subscription Plan</h3>
+              <button (click)="closePlanModal()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+          <!-- Form -->
+          <form [formGroup]="planForm" (ngSubmit)="submitPlanForm()" class="p-5 space-y-4 app-canvas">
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Plan Name *</label>
+                  <input formControlName="name" type="text" placeholder="Enterprise Scale" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Plan Code *</label>
+                      <input formControlName="code" type="text" placeholder="SAAS-PRO" class="w-full px-3 py-2 rounded-lg app-input text-xs uppercase"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Price *</label>
+                      <input formControlName="price" type="number" min="0" placeholder="2999" class="w-full px-3 py-2 rounded-lg app-input text-xs font-mono"/>
+                  </div>
+              </div>
+              <div class="grid grid-cols-3 gap-3">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Max Students</label>
+                      <input formControlName="max_students" type="number" min="1" placeholder="500" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Max Seats</label>
+                      <input formControlName="max_seats" type="number" min="1" placeholder="100" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Max Users</label>
+                      <input formControlName="max_users" type="number" min="1" placeholder="10" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+              </div>
+              <div class="pt-3 border-t flex justify-end gap-3">
+                  <button type="button" (click)="closePlanModal()" class="px-4 py-2 rounded-lg app-input text-xs font-semibold hover:opacity-80 transition-colors">Cancel</button>
+                  <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+                      @if (isLoading()) {
+                          <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      }
+                      Save Plan
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+}

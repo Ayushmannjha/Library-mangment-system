@@ -1,0 +1,38 @@
+<!--
+ unauthorized.html
+ User ke paas permission nahi hone par yeh page dikhta hai.
+-->
+<div class="min-h-dvh bg-background flex items-center justify-center p-margin-mobile app-content-bottom">
+  <div class="max-w-md w-full text-center">
+
+    <!-- Icon -->
+    <div class="w-24 h-24 rounded-full bg-error-container flex items-center justify-center mx-auto mb-lg">
+      <span class="material-symbols-outlined text-on-error-container" style="font-size: 48px; font-variation-settings: 'FILL' 1;">
+        lock
+      </span>
+    </div>
+
+    <!-- Heading -->
+    <h1 class="font-headline-lg text-headline-lg text-on-surface mb-sm">Access Denied</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant mb-xl">
+      You don't have permission to access this page. Please contact your administrator.
+    </p>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row gap-md justify-center">
+      <!-- Dashboard par wapas jao -->
+      <a routerLink="/dashboard"
+         class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-on-primary-fixed-variant transition-colors shadow-sm">
+        <span class="material-symbols-outlined text-xl">home</span>
+        Go to Dashboard
+      </a>
+
+      <!-- Logout -->
+      <button (click)="logout()"
+              class="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl border border-outline-variant bg-surface text-on-surface font-label-md text-label-md hover:bg-surface-container transition-colors">
+        <span class="material-symbols-outlined text-xl">logout</span>
+        Logout
+      </button>
+    </div>
+  </div>
+</div>

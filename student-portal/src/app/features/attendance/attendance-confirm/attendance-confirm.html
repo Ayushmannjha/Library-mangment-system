@@ -1,0 +1,102 @@
+<app-student-sidebar></app-student-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 lg:ml-[260px] flex flex-col min-h-dvh app-canvas app-body-top-safe">
+  <!-- TopNavBar (Desktop only) -->
+  <header class="hidden lg:flex sticky top-0 z-40 w-full app-top-nav justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm text-xs font-semibold text-muted hidden md:block">
+          Confirm Check-in
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Page Canvas -->
+  <main class="flex-1 px-4 pt-4 lg:px-6 lg:pt-6 app-canvas app-content-bottom">
+      <div class="max-w-lg mx-auto w-full space-y-6">
+
+          @if (resultMessage(); as msg) {
+              <div [class]="resultType() === 'success'
+                  ? 'rounded-xl border px-4 py-3 text-sm font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-2'
+                  : 'rounded-xl border px-4 py-3 text-sm font-medium bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 flex items-center gap-2'">
+                  <span class="material-symbols-outlined text-lg">{{ resultType() === 'success' ? 'check_circle' : 'error' }}</span>
+                  {{ msg }}
+              </div>
+          }
+
+          <!-- Confirm Card -->
+          <div class="app-card p-6 sm:p-8 rounded-2xl border relative overflow-hidden">
+              <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+              <div class="flex flex-col items-center text-center relative z-10">
+                  <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-slate-950 flex items-center justify-center shadow-md shadow-amber-500/20 mb-4">
+                      <span class="material-symbols-outlined text-2xl">how_to_reg</span>
+                  </div>
+
+                  <span class="text-[10px] font-bold tracking-wider uppercase opacity-60 mb-1">Library Attendance</span>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title mb-2">Confirm your check-in</h2>
+                  <p class="text-xs opacity-70 leading-relaxed max-w-sm">
+                      You scanned the library desk QR code. One code works for every student — this
+                      confirmation uses your signed-in session, never the QR itself.
+                  </p>
+              </div>
+
+              <!-- Student profile from the portal session -->
+              <div class="mt-6 rounded-xl border app-input p-4 flex items-center gap-3 relative z-10">
+                  <div class="w-10 h-10 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/25 flex items-center justify-center font-bold shrink-0">
+                      <span class="material-symbols-outlined text-lg">account_circle</span>
+                  </div>
+                  <div class="min-w-0">
+                      @if (studentService.profile()?.student; as student) {
+                          <p class="text-sm font-semibold truncate">{{ student.first_name }} {{ student.last_name || '' }}</p>
+                          <p class="text-xs opacity-70 truncate">Admission No. {{ student.admission_number }}</p>
+                      } @else if (studentService.isLoading()) {
+                          <p class="text-sm opacity-60">Loading your profile...</p>
+                      } @else {
+                          <p class="text-sm opacity-60">Profile unavailable</p>
+                      }
+                  </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="mt-6 flex flex-col gap-2.5 relative z-10">
+                  <button (click)="submit()"
+                          [disabled]="studentService.isLoading() || checkedIn()"
+                          class="w-full h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm flex justify-center items-center gap-2 shadow-md shadow-amber-500/25 transition-all disabled:opacity-50">
+                      @if (studentService.isLoading()) {
+                          <span class="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                          Checking in...
+                      } @else if (checkedIn()) {
+                          <span class="material-symbols-outlined text-lg">check_circle</span>
+                          Checked in — Welcome!
+                      } @else {
+                          <span class="material-symbols-outlined text-lg">login</span>
+                          Check in now
+                      }
+                  </button>
+
+                  <a routerLink="/attendance"
+                     class="w-full h-11 rounded-xl border app-input flex justify-center items-center gap-2 text-xs font-semibold opacity-80 hover:opacity-100 transition-all">
+                      <span class="material-symbols-outlined text-lg">fact_check</span>
+                      View my attendance history
+                  </a>
+              </div>
+          </div>
+
+          <!-- Info strip -->
+          <div class="rounded-xl border app-input px-4 py-3 flex items-start gap-2.5 text-[11px] opacity-70 leading-relaxed">
+              <span class="material-symbols-outlined text-base shrink-0">qr_code_scanner</span>
+              <p>
+                  The printed desk QR simply opens this page. Your attendance is always recorded
+                  against your own logged-in student account — the QR code contains no student data.
+              </p>
+          </div>
+      </div>
+  </main>
+</div>

@@ -1,0 +1,328 @@
+/* Tailwind v3 standard imports */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Centralized CSS Theme Custom Tokens */
+:root {
+  --bg-canvas: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.95);
+  --border-card: rgba(226, 232, 240, 0.9);
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --header-bg: linear-gradient(135deg, #fffbf0 0%, #fef3d0 45%, #fde8b4 100%);
+  --header-border: rgba(217, 119, 6, 0.35);
+  --header-shadow: 0 10px 25px -3px rgba(180, 100, 0, 0.12), 0 4px 12px -2px rgba(15, 23, 42, 0.06);
+  --header-title-color: #431407;
+  --header-subtitle-color: #78350f;
+  --header-icon-bg: rgba(245, 158, 11, 0.18);
+  --header-icon-text: #b45309;
+  --header-icon-border: rgba(245, 158, 11, 0.45);
+  --header-btn-bg: #ffffff;
+  --header-btn-border: rgba(217, 119, 6, 0.45);
+  --header-btn-text: #78350f;
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --nav-border: rgba(226, 232, 240, 0.9);
+  --table-header-bg: #f1f5f9;
+  --table-header-text: #475569;
+  --table-row-hover: #f8fafc;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --input-text: #0f172a;
+  --sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 27, 75, 0.96) 100%);
+  --sidebar-text: #f1f5f9;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+}
+
+html.dark, body.dark-theme, body.dark {
+  --bg-canvas: #0b0f19;
+  --bg-card: rgba(15, 23, 42, 0.85);
+  --border-card: rgba(255, 255, 255, 0.08);
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --header-bg: linear-gradient(90deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  --header-border: rgba(255, 255, 255, 0.12);
+  --header-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.4);
+  --header-title-color: #ffffff;
+  --header-subtitle-color: #cbd5e1;
+  --header-icon-bg: rgba(245, 158, 11, 0.2);
+  --header-icon-text: #f59e0b;
+  --header-icon-border: rgba(245, 158, 11, 0.3);
+  --header-btn-bg: rgba(255, 255, 255, 0.1);
+  --header-btn-border: rgba(255, 255, 255, 0.2);
+  --header-btn-text: #ffffff;
+  --nav-bg: rgba(15, 23, 42, 0.85);
+  --nav-border: rgba(255, 255, 255, 0.08);
+  --table-header-bg: rgba(15, 23, 42, 0.95);
+  --table-header-text: #94a3b8;
+  --table-row-hover: rgba(30, 41, 59, 0.5);
+  --input-bg: rgba(15, 23, 42, 0.9);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-text: #f8fafc;
+  --sidebar-bg: linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 27, 75, 0.96) 100%);
+  --sidebar-text: #f1f5f9;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Base Body Styles */
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-main);
+  min-height: 100vh;
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Dynamic App Theme Classes */
+.app-canvas {
+  background-color: var(--bg-canvas);
+  color: var(--text-main);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.app-top-nav {
+  background-color: var(--nav-bg);
+  border-color: var(--nav-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: all 0.25s ease;
+}
+
+.app-hero-header {
+  background: var(--header-bg);
+  border: 1.5px solid var(--header-border);
+  box-shadow: var(--header-shadow);
+  transition: all 0.25s ease;
+}
+
+.app-header-title {
+  color: var(--header-title-color);
+}
+
+.app-header-subtitle {
+  color: var(--header-subtitle-color);
+}
+
+.app-header-icon-box {
+  background-color: var(--header-icon-bg);
+  color: var(--header-icon-text);
+  border: 1.5px solid var(--header-icon-border);
+}
+
+.app-header-btn {
+  background-color: var(--header-btn-bg);
+  border: 1.5px solid var(--header-btn-border);
+  color: var(--header-btn-text);
+}
+
+.app-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-card);
+  color: var(--text-main);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s ease;
+}
+
+.app-card:hover {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.app-input {
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--input-text);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.app-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+
+.app-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.app-table th {
+  background-color: var(--table-header-bg);
+  color: var(--table-header-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-card);
+}
+
+.app-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-card);
+  color: var(--text-main);
+  font-size: 0.875rem;
+}
+
+.app-table tr:hover td {
+  background-color: var(--table-row-hover);
+}
+
+/* Deep Midnight Glass Sidebar */
+.library-midnight-sidebar {
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border-right: 1px solid var(--sidebar-border);
+}
+
+/* Custom Sleek Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.8);
+}
+
+/* ── Vibrant Status Badges ── */
+.app-badge-active {
+  background-color: #bbf7d0;
+  color: #14532d;
+  border: 1.5px solid #4ade80;
+  font-weight: 700;
+}
+
+html.dark .app-badge-active,
+body.dark-theme .app-badge-active {
+  background-color: rgba(74, 222, 128, 0.18);
+  color: #4ade80;
+  border: 1.5px solid rgba(74, 222, 128, 0.45);
+}
+
+.app-badge-inactive {
+  background-color: #fecdd3;
+  color: #881337;
+  border: 1.5px solid #fb7185;
+  font-weight: 700;
+}
+
+html.dark .app-badge-inactive,
+body.dark-theme .app-badge-inactive {
+  background-color: rgba(251, 113, 133, 0.18);
+  color: #fb7185;
+  border: 1.5px solid rgba(251, 113, 133, 0.45);
+}
+
+.app-badge-occupied {
+  background-color: #c7d2fe;
+  color: #1e1b4b;
+  border: 1.5px solid #818cf8;
+  font-weight: 700;
+}
+
+html.dark .app-badge-occupied,
+body.dark-theme .app-badge-occupied {
+  background-color: rgba(129, 140, 248, 0.18);
+  color: #a5b4fc;
+  border: 1.5px solid rgba(129, 140, 248, 0.45);
+}
+
+.app-badge-maintenance {
+  background-color: #fde68a;
+  color: #78350f;
+  border: 1.5px solid #f59e0b;
+  font-weight: 700;
+}
+
+html.dark .app-badge-maintenance,
+body.dark-theme .app-badge-maintenance {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Mobile-first / Capacitor app adjustments
+   ═══════════════════════════════════════════════════════════ */
+
+/* Use dynamic viewport height so mobile browser chrome never clips the app */
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none; /* prevent pull-to-refresh in the Capacitor webview */
+}
+
+/* Native-app feel: remove tap flashes, disable double-tap zoom, stop text
+   selection outside form fields */
+body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Safe-area insets (notch / home indicator) — the webview is full-bleed via
+   viewport-fit=cover, so padding uses env(safe-area-inset-*) */
+
+/* Fixed mobile top bar: sits below the status bar/notch */
+.app-top-safe {
+  height: calc(env(safe-area-inset-top, 0px) + 3.5rem);
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Slide-in drawer: respect the status bar at the top */
+.app-drawer-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Page content: clear the fixed mobile top bar (only on < lg screens) */
+.app-body-top-safe {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem);
+}
+
+/* Fixed bottom navigation bar (mobile): sits above the home indicator */
+.app-bottom-nav {
+  height: calc(env(safe-area-inset-bottom, 0px) + 3.75rem);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Page content bottom: clear the home indicator AND the fixed bottom nav on
+   mobile; on lg+ only the desktop spacing applies */
+.app-content-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 5.5rem);
+}
+
+@media (min-width: 1024px) {
+  .app-body-top-safe {
+    padding-top: 0;
+  }
+  .app-content-bottom {
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* Scrollable page containers for small screens */
+.app-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}

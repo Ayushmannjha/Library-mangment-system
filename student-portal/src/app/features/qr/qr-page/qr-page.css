@@ -1,0 +1,15 @@
+/* Constrain the html5-qrcode camera feed to its container on small screens */
+#qr-scanner {
+  width: 100%;
+}
+
+#qr-scanner video {
+  width: 100% !important;
+  height: auto !important;
+  object-fit: cover;
+  border-radius: 0.75rem;
+}
+
+#qr-scanner canvas {
+  border-radius: 0.75rem;
+}

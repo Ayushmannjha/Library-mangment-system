@@ -1,0 +1,88 @@
+<!--
+ roles-form.html
+ Role Create / Edit form.
+ Premium card-based form design using Lexicon design system.
+-->
+<app-sidebar></app-sidebar>
+<div class="min-h-screen bg-surface-container-low p-margin-mobile md:p-margin-desktop ml-[260px]">
+  <div class="max-w-2xl mx-auto">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 mb-lg">
+      <a routerLink="/roles" class="text-outline font-label-md text-label-md hover:text-primary transition-colors flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">arrow_back</span>
+        Roles
+      </a>
+      <span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+      <span class="text-primary font-label-md text-label-md font-semibold">
+        {{ isEditMode() ? 'Edit Role' : 'Create New Role' }}
+      </span>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+
+      <!-- Card Header -->
+      <div class="p-6 border-b border-outline-variant bg-surface-bright">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">manage_accounts</span>
+          </div>
+          <div>
+            <h1 class="font-headline-md text-headline-md text-on-surface">
+              {{ isEditMode() ? 'Edit Role' : 'Create New Role' }}
+            </h1>
+            <p class="font-body-md text-body-md text-on-surface-variant">
+              {{ isEditMode() ? 'Update role details.' : 'Define a new access control role.' }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Body -->
+      <form [formGroup]="roleForm" (ngSubmit)="onSubmit()" class="p-6 space-y-md">
+
+        <!-- Role Name -->
+        <div class="flex flex-col space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface" for="roleName">
+            Role Name <span class="text-error">*</span>
+          </label>
+          <input formControlName="name" id="roleName" type="text"
+                 placeholder="e.g. Library Manager"
+                 class="w-full h-12 px-4 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md text-on-surface placeholder:text-outline focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none"/>
+          @if (roleForm.get('name')?.invalid && roleForm.get('name')?.touched) {
+            <span class="text-error text-xs">Role name is required (min 2 characters).</span>
+          }
+        </div>
+
+        <!-- Description -->
+        <div class="flex flex-col space-y-xs">
+          <label class="font-label-md text-label-md text-on-surface" for="roleDesc">
+            Description <span class="text-outline">(Optional)</span>
+          </label>
+          <textarea formControlName="description" id="roleDesc" rows="3"
+                    placeholder="Briefly describe what this role is for..."
+                    class="w-full px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-lowest font-body-md text-body-md text-on-surface placeholder:text-outline focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all outline-none resize-none">
+          </textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end gap-3 pt-md border-t border-outline-variant">
+          <a routerLink="/roles"
+             class="px-6 py-2 rounded-xl border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-variant transition-colors">
+            Cancel
+          </a>
+          <button type="submit" [disabled]="isLoading()"
+                  class="px-6 py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-on-primary-fixed-variant transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+            @if (isLoading()) {
+              <span class="material-symbols-outlined text-xl animate-spin">sync</span>
+            } @else {
+              <span class="material-symbols-outlined text-xl">{{ isEditMode() ? 'save' : 'add' }}</span>
+            }
+            {{ isEditMode() ? 'Save Changes' : 'Create Role' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

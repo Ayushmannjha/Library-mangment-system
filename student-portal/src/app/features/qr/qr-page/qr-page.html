@@ -1,0 +1,138 @@
+<app-student-sidebar></app-student-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 lg:ml-[260px] flex flex-col min-h-dvh app-canvas app-body-top-safe">
+  <!-- TopNavBar (Desktop only) -->
+  <header class="hidden lg:flex sticky top-0 z-40 w-full app-top-nav justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm text-xs font-semibold text-muted hidden md:block">
+          QR Check-in
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Page Canvas -->
+  <main class="flex-1 px-4 pt-4 lg:px-6 lg:pt-6 space-y-6 app-canvas app-content-bottom">
+
+      <!-- Hero Header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-10 h-10 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-xl">qr_code_2</span>
+              </div>
+              <div>
+                  <h2 class="text-lg font-bold tracking-tight app-header-title">QR Check-in</h2>
+                  <p class="text-[11px] app-header-subtitle">One desk QR works for every student</p>
+              </div>
+          </div>
+      </div>
+
+      @if (lastResult(); as msg) {
+          <div [class]="lastResultType() === 'success'
+              ? 'rounded-xl border px-4 py-3 text-sm font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 flex items-center gap-2'
+              : 'rounded-xl border px-4 py-3 text-sm font-medium bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30 flex items-center gap-2'">
+              <span class="material-symbols-outlined text-lg">{{ lastResultType() === 'success' ? 'check_circle' : 'error' }}</span>
+              {{ msg }}
+          </div>
+      }
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          <!-- Desk QR Code Card -->
+          <div class="app-card p-6 rounded-2xl border relative overflow-hidden">
+              <div class="flex items-center justify-between mb-4">
+                  <div>
+                      <h3 class="font-semibold text-sm mb-0.5">Desk QR Code</h3>
+                      <p class="text-xs opacity-70">Same code for every student — no identity inside</p>
+                  </div>
+                  <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/20 flex items-center justify-center font-bold shrink-0">
+                      <span class="material-symbols-outlined text-lg">qr_code_2</span>
+                  </div>
+              </div>
+
+              <div class="flex flex-col items-center gap-4 py-4">
+                  @if (qrDataUrl(); as url) {
+                      <img [src]="url" alt="Desk QR Code"
+                           class="w-64 h-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white p-2 shadow-sm"/>
+                  } @else {
+                      <div class="w-64 h-64 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center">
+                          <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+                      </div>
+                  }
+
+                  <div class="text-center max-w-full">
+                      <p class="text-xs font-mono opacity-70 break-all">{{ deskUrl }}</p>
+                  </div>
+              </div>
+          </div>
+
+          <!-- Scan to Check-in Card -->
+          <div class="app-card p-6 rounded-2xl border relative overflow-hidden">
+              <div class="flex items-center justify-between mb-4">
+                  <div>
+                      <h3 class="font-semibold text-sm mb-0.5">Scan &amp; Check in</h3>
+                      <p class="text-xs opacity-70">Scan the desk QR — your session does the rest</p>
+                  </div>
+                  <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/20 flex items-center justify-center font-bold shrink-0">
+                      <span class="material-symbols-outlined text-lg">qr_code_scanner</span>
+                  </div>
+              </div>
+
+              <!-- Camera Region -->
+              <div class="relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-950/60 min-h-[240px]">
+                  <!-- Scanner container is ALWAYS in the DOM (hidden while idle) so
+                       html5-qrcode can attach to it without timing issues -->
+                  <div #scannerRegion class="w-full" [class.hidden]="!isScanning()">
+                      <div id="qr-scanner" class="w-full"></div>
+                  </div>
+
+                  @if (!isScanning()) {
+                      <div class="absolute inset-0 flex flex-col items-center justify-center text-center text-slate-300 p-6">
+                          <span class="material-symbols-outlined text-5xl mb-3 opacity-60">photo_camera</span>
+                          <p class="text-xs mb-1">Camera scanner is ready</p>
+                          <p class="text-[11px] opacity-50">Press start and aim at the desk QR code</p>
+                      </div>
+                  }
+              </div>
+
+              @if (cameraError(); as err) {
+                  <div class="mt-3 rounded-lg border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs px-3 py-2">
+                      {{ err }}
+                  </div>
+              }
+
+              <!-- Actions -->
+              <div class="mt-4 flex flex-col sm:flex-row gap-2">
+                  @if (isScanning()) {
+                      <button (click)="stopScanner()"
+                              class="flex-1 h-11 rounded-xl border border-outline-variant bg-surface text-on-surface font-label-md text-label-md flex justify-center items-center gap-2 hover:bg-surface-container transition-all">
+                          <span class="material-symbols-outlined text-lg">stop</span>
+                          Stop Camera
+                      </button>
+                  } @else {
+                      <button (click)="startScanning()"
+                              [disabled]="studentService.isLoading()"
+                              class="flex-1 h-11 rounded-xl bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-md text-label-md flex justify-center items-center gap-2 shadow-sm transition-all disabled:opacity-60">
+                          <span class="material-symbols-outlined text-lg">camera_alt</span>
+                          Start Camera
+                      </button>
+                  }
+
+                  <button (click)="quickCheckIn()"
+                          [disabled]="studentService.isLoading()"
+                          class="flex-1 h-11 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-label-md text-label-md flex justify-center items-center gap-2 hover:bg-emerald-500/20 transition-all disabled:opacity-50">
+                      <span class="material-symbols-outlined text-lg">how_to_reg</span>
+                      Check in now
+                  </button>
+              </div>
+          </div>
+      </div>
+  </main>
+</div>

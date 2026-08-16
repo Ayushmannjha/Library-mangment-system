@@ -1,0 +1,161 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm">
+          <span class="text-sm font-bold opacity-80">Reports & Analytics</span>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Theme Toggle -->
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+          <button (click)="reportsService.loadDashboardMetrics().subscribe()" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors" title="Refresh">
+              <span class="material-symbols-outlined text-lg">refresh</span>
+          </button>
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+
+      <!-- Hero Header Banner (Dynamic Theme) -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">bar_chart</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">Reports & Financial Analytics</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Real-time revenue insights, seat occupancy trends, student activity, and financial summaries.</p>
+              </div>
+          </div>
+          <div class="z-10">
+              <button (click)="reportsService.loadDashboardMetrics().subscribe()" class="app-header-btn text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs hover:opacity-90 transition-all">
+                  <span class="material-symbols-outlined text-sm">refresh</span>
+                  Refresh
+              </button>
+          </div>
+      </div>
+
+      <!-- Date Filter Bar -->
+      <div class="app-card rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3 flex-wrap">
+              <div class="flex items-center gap-2">
+                  <label class="text-xs font-medium opacity-60">From:</label>
+                  <input (change)="startDate.set($any($event.target).value)" type="date" class="px-3 py-1.5 rounded-lg app-input text-xs"/>
+              </div>
+              <div class="flex items-center gap-2">
+                  <label class="text-xs font-medium opacity-60">To:</label>
+                  <input (change)="endDate.set($any($event.target).value)" type="date" class="px-3 py-1.5 rounded-lg app-input text-xs"/>
+              </div>
+              <button (click)="applyFilter()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold px-4 py-1.5 rounded-lg hover:from-amber-400 hover:to-amber-500 transition-all shadow-sm">
+                  Filter Analytics
+              </button>
+          </div>
+      </div>
+
+      <!-- Stats Grid -->
+      @if (metrics(); as m) {
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Total Revenue -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+                  <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Total Revenue</span>
+                      <div class="p-1.5 rounded-lg bg-amber-500/15 text-amber-500">
+                          <span class="material-symbols-outlined text-lg">payments</span>
+                      </div>
+                  </div>
+                  <div class="text-xl font-extrabold font-mono text-amber-600 dark:text-amber-400">{{ m.monthly_revenue | currency:'INR':'symbol':'1.0-2' }}</div>
+              </div>
+              <!-- Occupancy Rate -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+                  <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Occupancy Rate</span>
+                      <div class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-500">
+                          <span class="material-symbols-outlined text-lg">event_seat</span>
+                      </div>
+                  </div>
+                  <div>
+                      <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ occupancyRate() }}%</div>
+                      <p class="text-[11px] opacity-55 mt-0.5">{{ m.occupied_seats }} of {{ m.total_seats }} seats</p>
+                  </div>
+              </div>
+              <!-- Enrolled Students -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+                  <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Enrolled Students</span>
+                      <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-500">
+                          <span class="material-symbols-outlined text-lg">groups</span>
+                      </div>
+                  </div>
+                  <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ m.total_students }}</div>
+              </div>
+              <!-- Today's Check-Ins -->
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+                  <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">Today's Check-Ins</span>
+                      <div class="p-1.5 rounded-lg bg-amber-500/15 text-amber-500">
+                          <span class="material-symbols-outlined text-lg">how_to_reg</span>
+                      </div>
+                  </div>
+                  <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400">{{ m.today_checkins }}</div>
+              </div>
+          </div>
+
+          <!-- Analytics Overview Breakdown -->
+          <div class="app-card rounded-xl p-5">
+              <h3 class="text-sm font-bold mb-4">Analytics Overview</h3>
+              <div class="space-y-3">
+                  <!-- Active Bookings Row -->
+                  <div class="flex items-center justify-between p-3.5 app-input rounded-xl">
+                      <div class="flex items-center gap-3">
+                          <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                              <span class="material-symbols-outlined text-lg">trending_up</span>
+                          </div>
+                          <div>
+                              <p class="text-xs font-semibold">Active Student Subscriptions</p>
+                              <p class="text-[11px] opacity-55 mt-0.5">Active seat allocations for current month</p>
+                          </div>
+                      </div>
+                      <span class="font-bold font-mono text-lg text-amber-600 dark:text-amber-400">{{ metrics()?.active_bookings ?? 0 }}</span>
+                  </div>
+                  <!-- Available Seats Row -->
+                  <div class="flex items-center justify-between p-3.5 app-input rounded-xl">
+                      <div class="flex items-center gap-3">
+                          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                              <span class="material-symbols-outlined text-lg">chair_alt</span>
+                          </div>
+                          <div>
+                              <p class="text-xs font-semibold">Available Seats</p>
+                              <p class="text-[11px] opacity-55 mt-0.5">Seats ready for immediate booking allocation</p>
+                          </div>
+                      </div>
+                      <span class="font-bold font-mono text-lg text-emerald-600 dark:text-emerald-400">{{ metrics()?.available_seats ?? 0 }}</span>
+                  </div>
+              </div>
+          </div>
+      }
+
+      @if (!metrics() && !isLoading()) {
+          <div class="app-card rounded-xl p-12 text-center opacity-60 text-sm">
+              No analytics data available. Click Refresh to load.
+          </div>
+      }
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[30vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      }
+  </main>
+</div>

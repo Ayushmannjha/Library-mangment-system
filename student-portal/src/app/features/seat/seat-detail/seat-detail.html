@@ -1,0 +1,113 @@
+<app-student-sidebar></app-student-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 lg:ml-[260px] flex flex-col min-h-dvh app-canvas app-body-top-safe">
+  <!-- TopNavBar (Desktop only) -->
+  <header class="hidden lg:flex sticky top-0 z-40 w-full app-top-nav justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm text-xs font-semibold text-muted hidden md:block">
+          Seat Allotment
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Page Canvas -->
+  <main class="flex-1 px-4 pt-4 lg:px-6 lg:pt-6 space-y-6 app-canvas app-content-bottom">
+
+      <!-- Hero Header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-10 h-10 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-xl">chair</span>
+              </div>
+              <div>
+                  <h2 class="text-lg font-bold tracking-tight app-header-title">My Seat</h2>
+                  <p class="text-[11px] app-header-subtitle">Your current seat allocation</p>
+              </div>
+          </div>
+          <button (click)="studentService.loadSeat().subscribe()"
+                  class="app-header-btn text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs hover:opacity-90 transition-all z-10">
+              <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+          </button>
+      </div>
+
+      @if (isLoading()) {
+          <div class="flex items-center justify-center h-[40vh]">
+              <span class="material-symbols-outlined animate-spin text-amber-500 text-4xl">progress_activity</span>
+          </div>
+      } @else if (seat(); as booking) {
+          <!-- Seat Allocation Card -->
+          <div class="app-card p-6 rounded-2xl border relative overflow-hidden">
+              <div class="flex flex-col md:flex-row items-center gap-8">
+                  <!-- Seat Visual -->
+                  <div class="flex flex-col items-center gap-3">
+                      <div class="w-40 h-40 rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-2 border-amber-500/50 flex flex-col items-center justify-center shadow-inner">
+                          <span class="material-symbols-outlined text-5xl text-amber-500">event_seat</span>
+                          <span class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-1">{{ booking.seats.seat_number }}</span>
+                      </div>
+                      <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border" [class]="statusClass(booking.status)">
+                          {{ booking.status }}
+                      </span>
+                  </div>
+
+                  <!-- Seat Details -->
+                  <div class="flex-1 w-full">
+                      <h3 class="font-bold text-base mb-4">Allocated Seat</h3>
+                      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                              <dt class="text-xs uppercase tracking-wider opacity-60 mb-0.5">Seat Name</dt>
+                              <dd class="font-semibold text-sm">{{ booking.seats.name || '—' }}</dd>
+                          </div>
+                          <div>
+                              <dt class="text-xs uppercase tracking-wider opacity-60 mb-0.5">Section</dt>
+                              <dd class="font-semibold text-sm">{{ booking.seats.section || '—' }}</dd>
+                          </div>
+                          <div>
+                              <dt class="text-xs uppercase tracking-wider opacity-60 mb-0.5">Floor</dt>
+                              <dd class="font-semibold text-sm">{{ booking.seats.floor || '—' }}</dd>
+                          </div>
+                          <div>
+                              <dt class="text-xs uppercase tracking-wider opacity-60 mb-0.5">Booking Date</dt>
+                              <dd class="font-semibold text-sm">{{ booking.booking_date | date:'dd MMM yyyy' }}</dd>
+                          </div>
+                          <div>
+                              <dt class="text-xs uppercase tracking-wider opacity-60 mb-0.5">Time Slot</dt>
+                              <dd class="font-semibold text-sm">{{ booking.time_slots.name }}</dd>
+                          </div>
+                          <div>
+                              <dt class="text-xs uppercase tracking-wider opacity-60 mb-0.5">Slot Timing</dt>
+                              <dd class="font-semibold text-sm">
+                                  {{ formatTime(booking.time_slots.start_time) }} — {{ formatTime(booking.time_slots.end_time) }}
+                              </dd>
+                          </div>
+                      </dl>
+                      @if (booking.notes) {
+                          <p class="mt-4 text-xs rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 px-3 py-2">
+                              <span class="material-symbols-outlined text-sm align-middle">notes</span>
+                              {{ booking.notes }}
+                          </p>
+                      }
+                  </div>
+              </div>
+          </div>
+      } @else {
+          <!-- No seat allocated -->
+          <div class="app-card p-10 rounded-2xl border text-center">
+              <div class="w-16 h-16 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center mx-auto mb-4">
+                  <span class="material-symbols-outlined text-3xl">event_seat</span>
+              </div>
+              <h3 class="font-bold text-base mb-1">No seat allocated yet</h3>
+              <p class="text-sm opacity-70 max-w-sm mx-auto">
+                  You don't have an active seat booking. Please contact the library staff to allocate a seat and time slot.
+              </p>
+          </div>
+      }
+  </main>
+</div>

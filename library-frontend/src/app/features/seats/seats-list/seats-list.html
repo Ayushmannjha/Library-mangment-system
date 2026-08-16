@@ -1,0 +1,418 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-md">
+          <div class="relative flex items-center w-full h-9 rounded-lg border app-input overflow-hidden transition-all">
+              <div class="grid place-items-center h-full w-9 opacity-60">
+                  <span class="material-symbols-outlined text-sm">search</span>
+              </div>
+              <input (input)="onSearchChange($event)" [value]="searchQuery()" class="peer h-full w-full outline-none text-xs bg-transparent pr-2 placeholder:opacity-50" placeholder="Search seats by number or section..." type="text"/>
+          </div>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Light / Dark Theme Switcher Button -->
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+
+      <!-- Hero Header Banner (Dynamic Theme) -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">chair</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">Seats Management Matrix</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Real-time floor grid, multi-shift schedule breakdown & quick seat allocations.</p>
+              </div>
+          </div>
+          <div class="flex gap-2.5 z-10">
+              <button (click)="openBulkModal()" class="app-header-btn text-xs font-semibold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-xs hover:opacity-90 transition-all">
+                  <span class="material-symbols-outlined text-base">grid_view</span>
+                  Bulk Generate
+              </button>
+              <button (click)="openCreateModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  Add Seat
+              </button>
+          </div>
+      </div>
+
+      <!-- Statistics Row -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Seats -->
+          <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+              <div class="flex justify-between items-start">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Total Seats</span>
+                  <div class="p-1.5 rounded-lg bg-amber-500/15 text-amber-500">
+                      <span class="material-symbols-outlined text-lg">event_seat</span>
+                  </div>
+              </div>
+              <div class="text-2xl font-extrabold">{{ totalCount() }}</div>
+          </div>
+          <!-- Available -->
+          <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+              <div class="flex justify-between items-start">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Available</span>
+                  <div class="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-500">
+                      <span class="material-symbols-outlined text-lg">check_circle</span>
+                  </div>
+              </div>
+              <div class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ availableCount() }}</div>
+          </div>
+          <!-- Occupied -->
+          <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+              <div class="flex justify-between items-start">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Occupied</span>
+                  <div class="p-1.5 rounded-lg bg-indigo-500/15 text-indigo-500">
+                      <span class="material-symbols-outlined text-lg">person</span>
+                  </div>
+              </div>
+              <div class="text-2xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ occupiedCount() }}</div>
+          </div>
+          <!-- Maintenance -->
+          <div class="app-card rounded-xl p-4 flex flex-col justify-between h-[110px]">
+              <div class="flex justify-between items-start">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Maintenance</span>
+                  <div class="p-1.5 rounded-lg bg-amber-500/15 text-amber-500">
+                      <span class="material-symbols-outlined text-lg">build</span>
+                  </div>
+              </div>
+              <div class="text-2xl font-extrabold text-amber-600 dark:text-amber-400">{{ maintenanceCount() }}</div>
+          </div>
+      </div>
+
+      <!-- Seat Grid Controls -->
+      <div class="app-card rounded-xl p-4 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div>
+              <h3 class="text-sm font-bold">Seating Layout Matrix</h3>
+              <p class="text-[11px] opacity-60 mt-0.5">Real-time availability scoped by Date & Shift Slot</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+              <!-- Date Picker -->
+              <div class="flex items-center gap-1.5 app-input rounded-lg px-3 py-2">
+                  <span class="material-symbols-outlined text-sm opacity-60">calendar_today</span>
+                  <input type="date" [value]="selectedDate()" (change)="onDateChange($event)" class="bg-transparent text-xs font-semibold outline-none cursor-pointer" />
+              </div>
+              <!-- Time Slot Dropdown -->
+              <div class="flex items-center gap-1.5 app-input rounded-lg px-3 py-2">
+                  <span class="material-symbols-outlined text-sm opacity-60">schedule</span>
+                  <select [value]="selectedTimeSlotId()" (change)="onTimeSlotChange($event)" class="bg-transparent text-xs font-semibold outline-none cursor-pointer">
+                      <option value="all">⚡ All Time Slots</option>
+                      @for (sl of slots(); track sl.id) {
+                          <option [value]="sl.id">🕒 {{ sl.name }}</option>
+                      }
+                  </select>
+              </div>
+              <!-- Search Box -->
+              <div class="relative flex-1 min-w-[140px]">
+                  <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm opacity-50">search</span>
+                  <input (input)="onSearchChange($event)" [value]="searchQuery()" class="w-full app-input rounded-lg pl-8 pr-2 py-2 text-xs" placeholder="Search seat..." type="text"/>
+              </div>
+              <!-- Refresh -->
+              <button (click)="reloadSeatsWithFilters()" class="app-input p-2 rounded-lg opacity-70 hover:opacity-100 transition-colors" title="Refresh">
+                  <span class="material-symbols-outlined text-sm">refresh</span>
+              </button>
+          </div>
+      </div>
+
+      <!-- Interactive Seat Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          @for (s of filteredSeats(); track s.id) {
+              <div (click)="openSeatSchedule(s)"
+                   class="app-card rounded-xl p-3.5 flex flex-col items-center justify-center gap-2 cursor-pointer hover:shadow-md transition-all group relative overflow-hidden"
+                   [class.border-emerald-400\/40]="s.status === 'ACTIVE'"
+                   [class.border-indigo-400\/40]="s.status === 'OCCUPIED'"
+                   [class.border-amber-400\/40]="s.status === 'MAINTENANCE'">
+
+                  @if (s.status === 'OCCUPIED') {
+                      <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500 rounded-l-xl"></div>
+                  }
+                  @if (s.status === 'MAINTENANCE') {
+                      <div class="absolute top-0 left-0 w-1 h-full bg-amber-500 rounded-l-xl"></div>
+                  }
+
+                  <!-- Seat Icon -->
+                  <div class="w-11 h-11 rounded-lg flex items-center justify-center transition-all"
+                       [class.bg-emerald-500\/12]="s.status === 'ACTIVE'"
+                       [class.text-emerald-600]="s.status === 'ACTIVE'"
+                       [class.bg-indigo-500\/12]="s.status === 'OCCUPIED'"
+                       [class.text-indigo-600]="s.status === 'OCCUPIED'"
+                       [class.bg-amber-500\/12]="s.status === 'MAINTENANCE'"
+                       [class.text-amber-600]="s.status === 'MAINTENANCE'">
+                      <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">chair</span>
+                  </div>
+
+                  <!-- Seat Info -->
+                  <div class="text-center">
+                      <div class="text-sm font-bold" [class.line-through]="s.status === 'MAINTENANCE'">{{ s.seat_number }}</div>
+                      <div class="text-[10px] opacity-55 mt-0.5">{{ s.section || s.floor || 'Main Wing' }}</div>
+                  </div>
+
+                  <!-- Status Badge -->
+                  <div class="mt-0.5 flex flex-col items-center gap-0.5">
+                      <div class="px-2 py-0.5 rounded-full text-[9px] transition-all"
+                           [class.app-badge-active]="s.status === 'ACTIVE'"
+                           [class.app-badge-occupied]="s.status === 'OCCUPIED'"
+                           [class.app-badge-maintenance]="s.status === 'MAINTENANCE'">
+                          {{ s.status === 'OCCUPIED' ? ((s.slot_bookings?.length || 1) + ' Booked') : s.status }}
+                      </div>
+                      @if (s.status !== 'MAINTENANCE') {
+                          <div class="text-[9px] opacity-50 flex items-center gap-0.5 mt-0.5 group-hover:text-amber-500 group-hover:opacity-100 transition-colors">
+                              <span class="material-symbols-outlined text-[11px]">touch_app</span>
+                              <span>View slots</span>
+                          </div>
+                      }
+                  </div>
+              </div>
+          } @empty {
+              <div class="col-span-full py-12 text-center opacity-60 text-sm">
+                  @if (isLoading()) {
+                      <div class="flex items-center justify-center gap-2">
+                          <span class="material-symbols-outlined animate-spin text-amber-500">progress_activity</span>
+                          Loading seat inventory...
+                      </div>
+                  } @else {
+                      No seats found. Click "Bulk Generate" or "Add Seat" to create seats.
+                  }
+              </div>
+          }
+      </div>
+  </main>
+</div>
+
+<!-- ── Seat Schedule Modal ── -->
+@if (showScheduleModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+          <!-- Modal Header -->
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-lg app-header-icon-box flex items-center justify-center">
+                      <span class="material-symbols-outlined text-lg">chair</span>
+                  </div>
+                  <div>
+                      <h3 class="text-sm font-bold">Seat {{ selectedSeat()?.seat_number }} Schedule</h3>
+                      <p class="text-[11px] opacity-60">{{ selectedSeat()?.section || selectedSeat()?.floor || 'Main Wing' }} • {{ formatIndianDate(selectedDate()) }}</p>
+                  </div>
+              </div>
+              <button (click)="closeSeatSchedule()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+
+          <!-- Slot Breakdown -->
+          <div class="p-5 space-y-3 max-h-[60vh] overflow-y-auto custom-scrollbar app-canvas">
+              <div class="flex justify-between items-center app-input rounded-xl p-3">
+                  <span class="text-xs font-semibold">Daily Shifts Breakdown</span>
+                  <span class="font-mono text-xs px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 font-semibold">
+                      {{ selectedSeat()?.slot_bookings?.length || 0 }} / {{ slots().length }} Slots Occupied
+                  </span>
+              </div>
+
+              <div class="space-y-2">
+                  @for (sl of slots(); track sl.id) {
+                      @let booking = getBookingForSlot(selectedSeat(), sl.id);
+                      <div class="p-3 rounded-xl border flex items-center justify-between transition-colors"
+                           [class.bg-indigo-50]="booking"
+                           [class.dark:bg-indigo-900\/20]="booking"
+                           [class.border-indigo-200]="booking"
+                           [class.dark:border-indigo-700\/50]="booking"
+                           [class.app-input]="!booking">
+                          <div class="flex items-center gap-3">
+                              <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                                   [class.bg-indigo-100]="booking"
+                                   [class.text-indigo-700]="booking"
+                                   [class.dark:bg-indigo-900\/50]="booking"
+                                   [class.dark:text-indigo-400]="booking"
+                                   [class.bg-emerald-100]="!booking"
+                                   [class.text-emerald-700]="!booking"
+                                   [class.dark:bg-emerald-900\/50]="!booking"
+                                   [class.dark:text-emerald-400]="!booking">
+                                  <span class="material-symbols-outlined text-sm">{{ booking ? 'person' : 'schedule' }}</span>
+                              </div>
+                              <div>
+                                  <div class="text-xs font-semibold">{{ sl.name }}</div>
+                                  @if (booking) {
+                                      <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                                          👤 {{ booking.student_name }} <span class="opacity-60">({{ booking.admission_number || booking.student_id }})</span>
+                                      </div>
+                                  } @else {
+                                      <div class="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">🟢 Available for Allocation</div>
+                                  }
+                              </div>
+                          </div>
+                          <div>
+                              @if (booking) {
+                                  <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700/50">
+                                      BOOKED
+                                  </span>
+                              } @else {
+                                  <button (click)="openQuickBook(selectedSeat()!, sl.id)"
+                                          class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-semibold shadow-xs hover:from-amber-400 hover:to-amber-500 transition-all flex items-center gap-1">
+                                      <span class="material-symbols-outlined text-xs">add</span>
+                                      Book Slot
+                                  </button>
+                              }
+                          </div>
+                      </div>
+                  } @empty {
+                      <div class="py-8 text-center opacity-55 text-xs">
+                          No Time Slots configured yet. Go to "Time Slots" tab to create library shifts.
+                      </div>
+                  }
+              </div>
+          </div>
+
+          <!-- Modal Footer -->
+          <div class="px-5 py-3.5 border-t app-top-nav flex justify-between items-center">
+              <button (click)="toggleSeatMaintenance(selectedSeat()!)" class="px-3 py-1.5 border border-amber-400/50 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs font-semibold hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-1">
+                  <span class="material-symbols-outlined text-xs">build</span>
+                  Toggle Maintenance
+              </button>
+              <button (click)="closeSeatSchedule()" class="px-4 py-2 app-input rounded-lg text-xs font-semibold hover:opacity-80 transition-colors">
+                  Close
+              </button>
+          </div>
+      </div>
+  </div>
+}
+
+<!-- ── Quick Student Allocation Modal ── -->
+@if (showQuickBookModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+          <!-- Header -->
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <h3 class="text-sm font-bold">Book Seat {{ selectedSeat()?.seat_number }}</h3>
+              <button (click)="closeQuickBook()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+          <form [formGroup]="quickBookForm" (ngSubmit)="submitQuickBook()" class="p-5 space-y-4 app-canvas">
+              <!-- Booking Info -->
+              <div class="app-input rounded-xl p-3 space-y-1">
+                  <div class="text-[11px] opacity-60">Seat: <span class="font-semibold opacity-100">{{ selectedSeat()?.seat_number }}</span></div>
+                  <div class="text-[11px] opacity-60">Date: <span class="font-semibold opacity-100">{{ selectedDate() }}</span></div>
+              </div>
+              <!-- Student Select -->
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Select Student *</label>
+                  <select formControlName="student_id" class="w-full px-3 py-2 rounded-lg app-input text-xs cursor-pointer">
+                      <option value="" disabled>-- Select Student --</option>
+                      @for (st of students(); track st.id) {
+                          <option [value]="st.id">{{ st.first_name }} {{ st.last_name || '' }} (ID: {{ st.admission_number }})</option>
+                      }
+                  </select>
+                  @if (quickBookForm.get('student_id')?.touched && quickBookForm.get('student_id')?.invalid) {
+                      <p class="text-[10px] text-rose-500 mt-1">Student selection is required</p>
+                  }
+              </div>
+              <!-- Actions -->
+              <div class="pt-3 border-t flex justify-end gap-3">
+                  <button type="button" (click)="closeQuickBook()" class="px-4 py-2 rounded-lg app-input text-xs font-semibold hover:opacity-80 transition-colors">Cancel</button>
+                  <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20">Confirm Allocation</button>
+              </div>
+          </form>
+      </div>
+  </div>
+}
+
+<!-- ── Add Single Seat Modal ── -->
+@if (showCreateModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <h3 class="text-sm font-bold">Add Single Seat</h3>
+              <button (click)="closeCreateModal()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+          <form [formGroup]="createForm" (ngSubmit)="submitCreate()" class="p-5 space-y-4 app-canvas">
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Seat Number *</label>
+                  <input formControlName="seat_number" type="text" placeholder="S-01" class="w-full px-3 py-2 rounded-lg app-input text-xs uppercase"/>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Floor</label>
+                      <input formControlName="floor" type="text" placeholder="Floor 1" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Section / Zone</label>
+                      <input formControlName="section" type="text" placeholder="North Wing" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+              </div>
+              <div class="pt-3 border-t flex justify-end gap-3">
+                  <button type="button" (click)="closeCreateModal()" class="px-4 py-2 rounded-lg app-input text-xs font-semibold hover:opacity-80 transition-colors">Cancel</button>
+                  <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20">Create Seat</button>
+              </div>
+          </form>
+      </div>
+  </div>
+}
+
+<!-- ── Bulk Generate Seats Modal ── -->
+@if (showBulkModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <h3 class="text-sm font-bold">Bulk Generate Seats</h3>
+              <button (click)="closeBulkModal()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+          <form [formGroup]="bulkForm" (ngSubmit)="submitBulk()" class="p-5 space-y-4 app-canvas">
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Prefix *</label>
+                      <input formControlName="prefix" type="text" placeholder="S-" class="w-full px-3 py-2 rounded-lg app-input text-xs uppercase"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Start Number *</label>
+                      <input formControlName="start_number" type="number" min="1" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+              </div>
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Count (Number of Seats) *</label>
+                  <input formControlName="count" type="number" min="1" max="200" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Floor</label>
+                      <input formControlName="floor" type="text" placeholder="Floor 1" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Section</label>
+                      <input formControlName="section" type="text" placeholder="Main Wing" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+              </div>
+              <div class="pt-3 border-t flex justify-end gap-3">
+                  <button type="button" (click)="closeBulkModal()" class="px-4 py-2 rounded-lg app-input text-xs font-semibold hover:opacity-80 transition-colors">Cancel</button>
+                  <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+                      @if (isLoading()) {
+                          <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      }
+                      Generate Seats
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+}

@@ -1,0 +1,138 @@
+<app-student-sidebar></app-student-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 lg:ml-[260px] flex flex-col min-h-dvh app-canvas app-body-top-safe">
+  <!-- TopNavBar (Desktop only) -->
+  <header class="hidden lg:flex sticky top-0 z-40 w-full app-top-nav justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-sm hidden md:block">
+          <div class="relative flex items-center w-full max-w-xs h-8.5 rounded-lg border app-input overflow-hidden transition-all">
+              <div class="grid place-items-center h-full w-9 opacity-60">
+                  <span class="material-symbols-outlined text-sm">search</span>
+              </div>
+              <input (input)="onSearchChange($event)" autocomplete="off"
+                     class="peer h-full w-full outline-none text-xs bg-transparent pr-2 placeholder:opacity-50"
+                     placeholder="Search date, status..." type="text"/>
+          </div>
+      </div>
+      <div class="flex items-center gap-2">
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Page Canvas -->
+  <main class="flex-1 px-4 pt-4 lg:px-6 lg:pt-6 space-y-6 app-canvas app-content-bottom">
+
+      <!-- Hero Header -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-10 h-10 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-xl">fact_check</span>
+              </div>
+              <div>
+                  <h2 class="text-lg font-bold tracking-tight app-header-title">My Attendance</h2>
+                  <p class="text-[11px] app-header-subtitle">Your complete visit history</p>
+              </div>
+          </div>
+          <button (click)="studentService.loadAttendance().subscribe()"
+                  class="app-header-btn text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-xs hover:opacity-90 transition-all z-10">
+              <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+          </button>
+      </div>
+
+      <!-- Stat Summary Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+              <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Total Visits</span>
+                  <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/20 flex items-center justify-center font-bold shrink-0">
+                      <span class="material-symbols-outlined text-lg">event_available</span>
+                  </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                  <span class="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">{{ totalDays() }}</span>
+                  <span class="text-xs opacity-70">Days attended</span>
+              </div>
+          </div>
+
+          <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+              <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Currently In</span>
+                  <div class="w-9 h-9 rounded-xl bg-indigo-500/15 text-indigo-500 border border-indigo-500/20 flex items-center justify-center font-bold shrink-0">
+                      <span class="material-symbols-outlined text-lg">login</span>
+                  </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                  <span class="text-3xl font-extrabold text-indigo-600 dark:text-indigo-300">{{ presentNow() }}</span>
+                  <span class="text-xs opacity-70">Open sessions</span>
+              </div>
+          </div>
+
+          <div class="app-card p-5 rounded-2xl border relative overflow-hidden transition-all duration-300">
+              <div class="flex items-center justify-between mb-3">
+                  <span class="text-xs font-bold uppercase tracking-wider opacity-70">Completed</span>
+                  <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/20 flex items-center justify-center font-bold shrink-0">
+                      <span class="material-symbols-outlined text-lg">logout</span>
+                  </div>
+              </div>
+              <div class="flex items-baseline gap-2">
+                  <span class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">{{ completedCount() }}</span>
+                  <span class="text-xs opacity-70">Checked out</span>
+              </div>
+          </div>
+      </div>
+
+      <!-- Attendance Table -->
+      <div class="app-card rounded-2xl border overflow-hidden">
+          <div class="overflow-x-auto">
+              <table class="app-table">
+                  <thead>
+                      <tr>
+                          <th>Date</th>
+                          <th>Check-in</th>
+                          <th>Check-out</th>
+                          <th>Method</th>
+                          <th>Status</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      @for (record of filteredRecords(); track record.id) {
+                          <tr>
+                              <td class="font-medium">{{ record.attendance_date | date:'dd MMM yyyy' }}</td>
+                              <td>{{ record.check_in_at | date:'hh:mm a' }}</td>
+                              <td>{{ record.check_out_at ? (record.check_out_at | date:'hh:mm a') : '—' }}</td>
+                              <td>
+                                  <span class="text-xs font-semibold uppercase">{{ record.check_in_method || 'QR' }}</span>
+                              </td>
+                              <td>
+                                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] border"
+                                        [class]="statusClass(record.attendance_status)">
+                                      {{ record.attendance_status }}
+                                  </span>
+                              </td>
+                          </tr>
+                      } @empty {
+                          <tr>
+                              <td colspan="5" class="text-center py-10">
+                                  @if (isLoading()) {
+                                      <span class="material-symbols-outlined animate-spin text-amber-500 text-3xl inline-block">progress_activity</span>
+                                  } @else {
+                                      <div class="flex flex-col items-center gap-2 opacity-60">
+                                          <span class="material-symbols-outlined text-4xl">event_busy</span>
+                                          <span class="text-sm">No attendance records found</span>
+                                      </div>
+                                  }
+                              </td>
+                          </tr>
+                      }
+                  </tbody>
+              </table>
+          </div>
+      </div>
+  </main>
+</div>

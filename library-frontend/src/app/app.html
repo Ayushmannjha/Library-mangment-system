@@ -1,0 +1,25 @@
+<!-- src/app/app.html -->
+<!-- Main Router Outlet jahan saare pages load honge (Login, Dashboard, etc.) -->
+<router-outlet></router-outlet>
+
+<!-- Global Toast Container -->
+<div class="fixed top-4 right-4 z-50 flex flex-col gap-2">
+  @for (toast of toastService.toasts(); track toast.id) {
+    <div 
+      class="px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center gap-2 transition-all duration-300 transform translate-x-0"
+      [class.bg-green-500]="toast.type === 'success'"
+      [class.bg-red-500]="toast.type === 'error'"
+      [class.bg-blue-500]="toast.type === 'info'"
+      [class.bg-yellow-500]="toast.type === 'warning'"
+    >
+      <span>{{ toast.message }}</span>
+      
+      <!-- Close button -->
+      <button (click)="toastService.removeToast(toast.id)" class="ml-2 hover:opacity-75 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  }
+</div>

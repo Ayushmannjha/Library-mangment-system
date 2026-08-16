@@ -1,0 +1,184 @@
+<!-- SideNavBar -->
+<app-sidebar></app-sidebar>
+
+<!-- Main Content Wrapper -->
+<div class="flex-1 ml-[260px] flex flex-col min-h-screen app-canvas">
+  <!-- TopNavBar (Dynamic Theme Header) -->
+  <header class="sticky top-0 z-40 w-full app-top-nav flex justify-between items-center h-14 px-6 border-b shadow-xs">
+      <div class="flex-1 max-w-md">
+          <div class="relative flex items-center w-full h-9 rounded-lg border app-input overflow-hidden transition-all">
+              <div class="grid place-items-center h-full w-9 opacity-60">
+                  <span class="material-symbols-outlined text-sm">search</span>
+              </div>
+              <input (input)="onSearchChange($event)" [value]="searchQuery()" class="peer h-full w-full outline-none text-xs bg-transparent pr-2 placeholder:opacity-50" placeholder="Search slots by name or description..." type="text"/>
+          </div>
+      </div>
+      <div class="flex items-center gap-2">
+          <!-- Light / Dark Theme Switcher -->
+          <button (click)="themeService.toggleTheme()"
+                  class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1.5 text-xs font-semibold border app-input shadow-xs"
+                  [title]="themeService.theme() === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'">
+              <span class="material-symbols-outlined text-sm text-amber-500">{{ themeService.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}</span>
+              <span>{{ themeService.theme() === 'dark' ? 'Light' : 'Dark' }}</span>
+          </button>
+          <button class="p-1.5 opacity-70 hover:opacity-100 rounded-lg transition-colors">
+              <span class="material-symbols-outlined text-lg">notifications</span>
+          </button>
+      </div>
+  </header>
+
+  <!-- Main Canvas -->
+  <main class="flex-1 p-5 space-y-5 app-canvas">
+
+      <!-- Hero Header Banner (Dynamic Theme) -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 app-hero-header py-3.5 px-5 rounded-xl shadow-xs border relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl pointer-events-none"></div>
+          <div class="flex items-center gap-3.5 z-10">
+              <div class="w-11 h-11 rounded-xl app-header-icon-box flex items-center justify-center font-bold shrink-0 shadow-inner">
+                  <span class="material-symbols-outlined text-2xl">schedule</span>
+              </div>
+              <div>
+                  <h2 class="text-xl font-bold tracking-tight app-header-title">Time Slots Configuration</h2>
+                  <p class="text-xs mt-0.5 app-header-subtitle">Define operational shifts and daily access windows for multi-slot seat bookings.</p>
+              </div>
+          </div>
+          <div class="z-10">
+              <button (click)="openCreateModal()" class="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-md shadow-amber-500/20 hover:from-amber-400 hover:to-amber-500 transition-all">
+                  <span class="material-symbols-outlined text-base">add</span>
+                  Add Time Slot
+              </button>
+          </div>
+      </div>
+
+      <!-- Filters Bar -->
+      <div class="app-card rounded-xl p-4 flex flex-wrap gap-4 items-center">
+          <div class="flex-1 min-w-[200px]">
+              <div class="relative">
+                  <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-sm opacity-60 pointer-events-none">search</span>
+                  <input (input)="onSearchChange($event)" [value]="searchQuery()" class="w-full pl-9 pr-4 py-2 rounded-lg app-input text-xs" placeholder="Search slots..." type="text"/>
+              </div>
+          </div>
+          <div class="flex items-center gap-2">
+              <select (change)="selectedStatus.set($any($event.target).value)" class="px-3 py-2 rounded-lg app-input text-xs cursor-pointer">
+                  <option value="">Status: All</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="INACTIVE">Inactive</option>
+              </select>
+          </div>
+          <button (click)="timeSlotsService.loadSlots().subscribe()" class="p-2 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors shadow-xs ml-auto" title="Refresh">
+              <span class="material-symbols-outlined text-sm">refresh</span>
+          </button>
+      </div>
+
+      <!-- Slots Cards Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          @for (s of filteredSlots(); track s.id) {
+              <div class="app-card rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-all relative overflow-hidden">
+                  <!-- Top Row: Icon + Name + Status -->
+                  <div class="flex justify-between items-start mb-3">
+                      <div class="flex items-center gap-3">
+                          <div class="w-10 h-10 rounded-xl app-header-icon-box flex items-center justify-center shrink-0">
+                              <span class="material-symbols-outlined">schedule</span>
+                          </div>
+                          <div>
+                              <h3 class="text-sm font-bold">{{ s.name }}</h3>
+                              <p class="text-[11px] opacity-55 mt-0.5">{{ s.description || 'Custom Time Window' }}</p>
+                          </div>
+                      </div>
+                      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] shrink-0 transition-all"
+                            [class.app-badge-active]="s.status === 'ACTIVE'"
+                            [class.app-badge-inactive]="s.status === 'INACTIVE'">
+                          <span class="w-1.5 h-1.5 rounded-full"
+                                [class.bg-emerald-500]="s.status === 'ACTIVE'"
+                                [class.bg-rose-500]="s.status === 'INACTIVE'"></span>
+                          {{ s.status }}
+                      </span>
+                  </div>
+
+                  <!-- Timing Display -->
+                  <div class="app-input rounded-xl p-3 my-2 flex items-center justify-around text-center">
+                      <div>
+                          <span class="text-[10px] opacity-55 uppercase tracking-wider block mb-0.5">Start Time</span>
+                          <span class="font-mono text-sm font-bold">{{ formatTimeDisplay(s.start_time) }}</span>
+                      </div>
+                      <span class="material-symbols-outlined opacity-40 text-sm">arrow_forward</span>
+                      <div>
+                          <span class="text-[10px] opacity-55 uppercase tracking-wider block mb-0.5">End Time</span>
+                          <span class="font-mono text-sm font-bold">{{ formatTimeDisplay(s.end_time) }}</span>
+                      </div>
+                  </div>
+
+                  <!-- Card Actions -->
+                  <div class="pt-3 border-t flex justify-end gap-1.5">
+                      <button (click)="openEditModal(s)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors" title="Edit Slot">
+                          <span class="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                      <button (click)="toggleStatus(s)" class="p-1.5 rounded-lg app-input opacity-70 hover:opacity-100 transition-colors"
+                              [title]="s.status === 'ACTIVE' ? 'Deactivate' : 'Activate'">
+                          <span class="material-symbols-outlined text-[18px]">{{ s.status === 'ACTIVE' ? 'block' : 'check_circle' }}</span>
+                      </button>
+                  </div>
+              </div>
+          } @empty {
+              <div class="col-span-full py-12 text-center opacity-60 text-sm">
+                  @if (isLoading()) {
+                      <div class="flex items-center justify-center gap-2">
+                          <span class="material-symbols-outlined animate-spin text-amber-500">progress_activity</span>
+                          Loading time slots...
+                      </div>
+                  } @else {
+                      No time slots configured. Click "Add Time Slot" to create one.
+                  }
+              </div>
+          }
+      </div>
+  </main>
+</div>
+
+<!-- ── Add / Edit Time Slot Modal ── -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+      <div class="app-card rounded-xl shadow-xl w-full max-w-md overflow-hidden flex flex-col">
+          <!-- Modal Header -->
+          <div class="px-5 py-4 border-b app-top-nav flex justify-between items-center">
+              <h3 class="text-sm font-bold">{{ editingSlot() ? 'Edit Time Slot' : 'Add New Time Slot' }}</h3>
+              <button (click)="closeModal()" class="opacity-60 hover:opacity-100 p-1 rounded-full transition-colors">
+                  <span class="material-symbols-outlined text-lg">close</span>
+              </button>
+          </div>
+          <!-- Form -->
+          <form [formGroup]="slotForm" (ngSubmit)="submitForm()" class="p-5 space-y-4 app-canvas">
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Slot Name *</label>
+                  <input formControlName="name" type="text" placeholder="Morning Shift (08:00 - 14:00)" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  @if (slotForm.get('name')?.touched && slotForm.get('name')?.invalid) {
+                      <p class="text-[10px] text-rose-500 mt-1">Slot name is required</p>
+                  }
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">Start Time *</label>
+                      <input formControlName="start_time" type="time" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+                  <div>
+                      <label class="block text-xs font-medium opacity-70 mb-1">End Time *</label>
+                      <input formControlName="end_time" type="time" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+                  </div>
+              </div>
+              <div>
+                  <label class="block text-xs font-medium opacity-70 mb-1">Description</label>
+                  <input formControlName="description" type="text" placeholder="Optional notes (e.g. Standard morning shift)" class="w-full px-3 py-2 rounded-lg app-input text-xs"/>
+              </div>
+              <div class="pt-3 border-t flex justify-end gap-3">
+                  <button type="button" (click)="closeModal()" class="px-4 py-2 rounded-lg app-input text-xs font-semibold hover:opacity-80 transition-colors">Cancel</button>
+                  <button type="submit" [disabled]="isLoading()" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 rounded-lg text-xs font-bold hover:from-amber-400 hover:to-amber-500 transition-all disabled:opacity-50 shadow-md shadow-amber-500/20 flex items-center gap-1.5">
+                      @if (isLoading()) {
+                          <span class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                      }
+                      {{ editingSlot() ? 'Update Slot' : 'Create Slot' }}
+                  </button>
+              </div>
+          </form>
+      </div>
+  </div>
+}
